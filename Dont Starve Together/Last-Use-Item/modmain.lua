@@ -50,6 +50,13 @@ if IsModEnable(modinfo.name) then
             inst._lastEquippedItem = equipInst
         end
     end
+
+    -- 监听所有物品的 onbreak 事件
+    AddComponentPostInit("inventoryitem", function(item)
+        if item.prefab == "yellowamulet" then
+            item:ListenForEvent("onbreak", OnAmuletBreak)
+        end
+    end)
 end
 
 function PrintInventoryItems()
@@ -88,6 +95,28 @@ function SwapToLastEquippedItem()
             else
                 print("Last equipped item is no longer in inventory.")
             end
+        end
+    end
+end
+
+function OnAmuletBreak(inst, data)
+    if inst.prefab == "yellowamulet" then
+        local player = ThePlayer
+
+        -- 阻止物品被销毁
+        inst.AnimState:SetMultColour(1, 1, 1, 1)  -- 取消透明度设置（如果有）
+        inst:RemoveEventCallback("onbreak", OnAmuletBreak)  -- 防止重复触发
+
+        -- 将物品从装备槽中移除
+        player.components.inventory:Unequip()
+
+        -- 将物品放回物品栏或背包
+        if player.components.inventory:GiveItem(inst, nil, player:GetPosition()) then
+            print("Magic amulet returned to inventory.")
+        else
+            -- 如果物品栏已满，可以考虑将物品放在地上或其他处理方式
+            print("Inventory is full, magic amulet dropped on the ground.")
+            inst.Transform:SetPosition(player:GetPosition():Get())
         end
     end
 end
