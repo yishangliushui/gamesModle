@@ -9,6 +9,7 @@ for k, dir in pairs(moddir) do
     local info = KnownModIndex:GetModInfo(dir)
     local name = info and info.name or "unknow"
     enablemods[dir] = name
+    print("已启用的Mod: "..name..tostring(k))
 end
 
 -- MOD是否开启
