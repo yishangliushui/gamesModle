@@ -1,26 +1,32 @@
-require "modinfo"
-
 print("启动-..........")
+local constant = require "scripts.constant"
+require("modindex")
+
+-- 获取是客服端还是服务端
+if GLOBAL.TheNet:GetIsClient() then
+    print("启动-客户端")
+elseif GLOBAL.TheNet:GetIsServer() then
+    print("启动-服务端")
+end
 
 local moddir = KnownModIndex:GetModsToLoad(true)
 local enablemods = {}
+local modIndex = {}
 
 for k, dir in pairs(moddir) do
     local info = KnownModIndex:GetModInfo(dir)
     local name = info and info.name or "unknow"
     enablemods[dir] = name
+    modIndex[name] = dir
     print("已启用的Mod: "..name..tostring(k))
 end
 
 -- MOD是否开启
 function IsModEnable(name)
-    for k, v in pairs(enablemods) do
-        if v and (k:match(name) or v:match(name)) then return true end
-    end
-    return false
+    return modIndex[name] ~= nil or enablemods[name] ~= nil
 end
 
-if IsModEnable(modinfo.name) then
+if IsModEnable(constant.name) then
     local useHotkeyEable = GetModConfigData("useHotkeyEable")
     local useHotkey = GetModConfigData("useHotkey")
 
@@ -29,39 +35,64 @@ if IsModEnable(modinfo.name) then
     end
 
     -- 添加监听事件
-    GLOBAL.TheInput:AddKeyHandler(function(key, down)  -- 监听键盘事件
-        print("key: "..key.." down: "..tostring(down))
+    function AddInputHandler(handler)
+        GLOBAL.TheInput:AddKeyHandler(function(key, down)
+            handler(key, down, "keyboard")
+        end)
+        GLOBAL.TheInput:AddMouseButtonHandler(function(key, down)
+            handler(key, down, "mouse")
+        end)
+    end
+
+    AddInputHandler(function(key, down, inputType)
+        print("【【【【"..inputType.." key: "..key.." down: "..tostring(down))
         PrintInventoryItems()
         if down then
             if key == useHotkey then
                 SwapToLastEquippedItem()
             elseif key == GLOBAL.KEY_RIGHTBRACKET then
+                -- 其他逻辑
             end
         end
     end)
 
-    -- 确保监听器只添加一次
-    if not ThePlayer.onequip_swap_listener_added then
-        ThePlayer:ListenForEvent("equip", OnEquip)
-        ThePlayer.onequip_swap_listener_added = true
+    -- 定义一个函数来绑定快捷键
+    function BindSwitchWeaponKey()
+        local player = GLOBAL.ThePlayer
+        print(debug.getmetatable(player))
+        print(player)
+        -- 确保监听器只添加一次
+        if not player.onequip_swap_listener_added then
+            player:ListenForEvent("equip", OnEquip)
+            player.onequip_swap_listener_added = true
+        end
     end
 
     function OnEquip(inst, equipInst)
+        print("【【【【路径1")
         if equipInst and equipInst.prefab then
+            print("【【【【路径2")
             inst._lastEquippedItem = equipInst
+            return
         end
+        print("【【【【路径3")
+        local currentEquipped = player.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
+        inst._lastEquippedItem = currentEquipped
     end
 
-    -- 监听所有物品的 onbreak 事件
-    AddComponentPostInit("inventoryitem", function(item)
-        if item.prefab == "yellowamulet" then
-            item:ListenForEvent("onbreak", OnAmuletBreak)
-        end
-    end)
+    --GLOBAL.TheSim:PushEvent("playerloaded", { fn = BindSwitchWeaponKey })
+    AddEventCallback("ms_playerjoinedworld", BindSwitchWeaponKey)
+    -- 监听所有物品的 onbreak 事件（如果需要）
+    -- AddComponentPostInit("inventoryitem", function(item)
+    --     if item.prefab == "yellowamulet" then
+    --         item:ListenForEvent("onbreak", OnAmuletBreak)
+    --     end
+    -- end)
 end
 
 function PrintInventoryItems()
-    local player = ThePlayer
+    local player = GLOBAL.ThePlayer
+    print("Player: " ..tostring(player))
     local inventory = player and player.components.inventory
 
     if inventory then
@@ -77,7 +108,8 @@ function PrintInventoryItems()
 end
 
 function SwapToLastEquippedItem()
-    local player = ThePlayer
+    local player = GLOBAL.ThePlayer
+    print(player)
     if player and player.components.inventory.equipslots then
         -- 获取当前手持物品
         local currentEquipped = player.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
@@ -99,27 +131,3 @@ function SwapToLastEquippedItem()
         end
     end
 end
-
-function OnAmuletBreak(inst, data)
-    if inst.prefab == "yellowamulet" then
-        local player = ThePlayer
-
-        -- 阻止物品被销毁
-        inst.AnimState:SetMultColour(1, 1, 1, 1)  -- 取消透明度设置（如果有）
-        inst:RemoveEventCallback("onbreak", OnAmuletBreak)  -- 防止重复触发
-
-        -- 将物品从装备槽中移除
-        player.components.inventory:Unequip()
-
-        -- 将物品放回物品栏或背包
-        if player.components.inventory:GiveItem(inst, nil, player:GetPosition()) then
-            print("Magic amulet returned to inventory.")
-        else
-            -- 如果物品栏已满，可以考虑将物品放在地上或其他处理方式
-            print("Inventory is full, magic amulet dropped on the ground.")
-            inst.Transform:SetPosition(player:GetPosition():Get())
-        end
-    end
-end
-
-
