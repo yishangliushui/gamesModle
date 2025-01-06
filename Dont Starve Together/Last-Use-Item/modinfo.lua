@@ -1,6 +1,5 @@
-local constant = require "scripts.constant"
 -- 名称
-name = constant.name
+name = "Last Use Item"
 -- 描述
 description = "使用上一个使用的物品"
 -- 作者
