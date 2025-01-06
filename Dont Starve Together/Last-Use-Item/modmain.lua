@@ -1,11 +1,39 @@
 print("启动-..........")
+local require = GLOBAL.require
+local STRINGS = GLOBAL.STRINGS
+local Ingredient = GLOBAL.Ingredient
+local RECIPETABS = GLOBAL.RECIPETABS
+local Recipe = GLOBAL.Recipe
+local TECH = GLOBAL.TECH
+local TUNING = GLOBAL.TUNING
+local Player = GLOBAL.ThePlayer
+local TheNet = GLOBAL.TheNet
+local IsServer = GLOBAL.TheNet:GetIsServer()
+local TheInput = GLOBAL.TheInput
+local TimeEvent = GLOBAL.TimeEvent
+local FRAMES = GLOBAL.FRAMES
+local EQUIPSLOTS = GLOBAL.EQUIPSLOTS
+local EventHandler = GLOBAL.EventHandler
+local SpawnPrefab = GLOBAL.SpawnPrefab
+local State = GLOBAL.State
+local DEGREES = GLOBAL.DEGREES
+local Vector3 = GLOBAL.Vector3
+local ACTIONS = GLOBAL.ACTIONS
+local FOODTYPE = GLOBAL.FOODTYPE
+local PLAYERSTUNLOCK = GLOBAL.PLAYERSTUNLOCK
+local GetTime = GLOBAL.GetTime
+local HUMAN_MEAT_ENABLED = GLOBAL.HUMAN_MEAT_ENABLED
+local TheSim = GLOBAL.TheSim
+local ActionHandler = GLOBAL.ActionHandler
+local KnownModIndex = GLOBAL.KnownModIndex
+
 local constant = require "scripts.constant"
 require("modindex")
 
 -- 获取是客服端还是服务端
-if GLOBAL.TheNet:GetIsClient() then
+if TheNet:GetIsClient() then
     print("启动-客户端")
-elseif GLOBAL.TheNet:GetIsServer() then
+elseif TheNet:GetIsServer() then
     print("启动-服务端")
 end
 
@@ -18,7 +46,7 @@ for k, dir in pairs(moddir) do
     local name = info and info.name or "unknow"
     enablemods[dir] = name
     modIndex[name] = dir
-    print("已启用的Mod: "..name..tostring(k))
+    print("已启用的Mod: "..name..k)
 end
 
 -- MOD是否开启
@@ -81,7 +109,7 @@ if IsModEnable(constant.name) then
     end
 
     --GLOBAL.TheSim:PushEvent("playerloaded", { fn = BindSwitchWeaponKey })
-    AddEventCallback("ms_playerjoinedworld", BindSwitchWeaponKey)
+    GLOBAL.AddEventCallback("ms_playerjoinedworld", BindSwitchWeaponKey)
     -- 监听所有物品的 onbreak 事件（如果需要）
     -- AddComponentPostInit("inventoryitem", function(item)
     --     if item.prefab == "yellowamulet" then
