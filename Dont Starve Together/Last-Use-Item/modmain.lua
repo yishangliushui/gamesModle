@@ -110,6 +110,7 @@ if IsModEnable("Last Use Item") then
 
     -- 定义一个函数来绑定快捷键
     function BindSwitchWeaponKey()
+        print("【【【【加入日志...................................")
         print(debug.getmetatable(Player))
         print(Player)
         -- 确保监听器只添加一次
@@ -132,8 +133,14 @@ if IsModEnable("Last Use Item") then
     end
 
     --GLOBAL.TheSim:PushEvent("Playerloaded", { fn = BindSwitchWeaponKey })
-    GLOBAL.AddEventCallback("ms_playerjoinedworld", BindSwitchWeaponKey)
-    -- 监听所有物品的 onbreak 事件（如果需要）
+    GLOBAL.AddEventCallback("ms_playerjoined", BindSwitchWeaponKey)
+
+    if TheNet.GetIsServer() then
+        print("【【【【启动-服务端")
+        AddPrefabPostInit("yellowamulet", function(inst)
+
+        end)
+    end
     -- AddComponentPostInit("inventoryitem", function(item)
     --     if item.prefab == "yellowamulet" then
     --         item:ListenForEvent("onbreak", OnAmuletBreak)

@@ -15,7 +15,7 @@ forumthread = ""
 dst_compatible = true
 dont_starve_compatible = true
 -- 是否是客户端mod
-client_only_mod = true
+client_only_mod = false
 -- 是否是所有客户端都需要安装
 all_clients_require_mod = true
 -- 饥荒api版本，固定填10
