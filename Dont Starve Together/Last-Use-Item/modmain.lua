@@ -55,6 +55,8 @@ local ActionHandler = GLOBAL.ActionHandler
 -- 已知模组索引，用于管理加载的模组信息
 local KnownModIndex = GLOBAL.KnownModIndex
 
+local lastuseditem = require "scripts/lastuseditem"
+
 -- 获取是客服端还是服务端
 if TheNet:GetIsClient() then
     print("启动-客户端")
@@ -128,6 +130,28 @@ local function yishang_onunequip_yellow(inst, owner)
     turnoff_yellow(inst)
 end
 
+local function OnEquipped(inst, data)
+    if data.slot == EQUIPSLOTS.HANDS then
+        inst.components.lastuseditem:SetLastItem(data.item)
+    end
+end
+
+local function OnUnequipped(inst, data)
+    if data.slot == EQUIPSLOTS.HANDS then
+        -- 这里可以做任何需要的操作，例如清空或保留最后的物品
+    end
+end
+
+-- 在main.lua或其他合适的地方
+local function OnKeyDown(inst, data)
+    if data.key == 308 then -- 替换为你的快捷键
+        local last_item = inst.components.lastuseditem:GetLastItem()
+        if last_item and last_item:IsValid() then
+            inst.components.inventory:Equip(last_item)
+        end
+    end
+end
+
 if IsModEnable("Last Use Item") then
     local useHotkeyEable = GetModConfigData("useHotkeyEable")
     local useHotkey = GetModConfigData("useHotkey")
@@ -190,8 +214,23 @@ if IsModEnable("Last Use Item") then
 
     --GLOBAL.TheSim:PushEvent("payerloaded", { fn = BindSwitchWeaponKey })
     --GLOBAL.AddEventCallback("ms_playerjoined", BindSwitchWeaponKey)
-    print("【【【【启动-服务端-重新初始化")
+    -- 在main.lua或其他合适的地方
+
+    AddPlayersAfterInit(function(inst)
+        print("【【【【启动-服务端-用户")
+        if not GLOBAL.TheWorld.ismastersim then
+            return
+        end
+        if not inst.components.lastuseditem then
+            inst:AddComponent("lastuseditem")
+        end
+        -- 添加事件监听
+        inst:ListenForEvent("equipped", OnEquipped)
+        inst:ListenForEvent("unequipped", OnUnequipped)
+    end)
+
     AddPrefabPostInit("yellowamulet", function(inst)
+        print("【【【【启动-服务端-重新初始化")
         if not GLOBAL.TheWorld.ismastersim then
             return
         end
@@ -199,6 +238,11 @@ if IsModEnable("Last Use Item") then
             inst.components.fueled:SetDepletedFn(yishang_onunequip_yellow)
         end
     end)
+
+    -- 注册输入监听
+    TheInput:AddKeyBoardAction("ToggleLastItem")
+    TheInput:AddKeyUpFunction("ToggleLastItem", OnKeyDown)
+
     -- AddComponentPostInit("inventoryitem", function(item)
     --     if item.prefab == "yellowamulet" then
     --         item:ListenForEvent("onbreak", OnAmuletBreak)
@@ -234,8 +278,19 @@ function PrintInventoryItems()
     --else
     --    print("No metatable found for Player")
     --end
+    local inventory = Player and Player.replica.inventory
+    if inventory then
+        print("Player Inventory Items:")
+        for i, v in pairs(inventory.itemslots) do
+            if v then
+                print(i, v.prefab)
+            end
+        end
+    else
+        print("Player does not have an inventory component.")
+    end
 
-    local inventory = Player and Player.components.inventory
+    inventory = Player and Player.components.inventory
     print(GLOBAL.debug.getmetatable(Player.components))
 
     if inventory then
