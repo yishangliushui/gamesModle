@@ -1,3 +1,4 @@
+GLOBAL.setmetatable(env,{__index=function(t,k) return GLOBAL.rawget(GLOBAL,k) end})
 print("启动-..........")
 -- 全局的require函数，用于加载模块
 local require = GLOBAL.require
@@ -61,6 +62,7 @@ elseif TheNet:GetIsServer() then
     print("启动-服务端")
 end
 
+
 local moddir = KnownModIndex:GetModsToLoad(true)
 local enablemods = {}
 local modIndex = {}
@@ -76,6 +78,54 @@ end
 -- MOD是否开启
 function IsModEnable(name)
     return modIndex[name] ~= nil or enablemods[name] ~= nil
+end
+
+local function turnoff_yellow(inst)
+    if inst._light ~= nil then
+        if inst._light:IsValid() then
+            inst._light:Remove()
+        end
+        inst._light = nil
+    end
+end
+
+local function miner_perish(inst)
+    local equippable = inst.components.equippable
+    if equippable ~= nil and equippable:IsEquipped() then
+        local owner = inst.components.inventoryitem ~= nil and inst.components.inventoryitem.owner or nil
+        if owner ~= nil then
+            local data =
+            {
+                prefab = inst.prefab,
+                equipslot = equippable.equipslot,
+            }
+            turnoff_yellow(inst)
+            owner:PushEvent("torchranout", data)
+            return
+        end
+    end
+    turnoff_yellow(inst)
+end
+
+local function yishang_onunequip_yellow(inst, owner)
+    if owner.components.bloomer ~= nil then
+        owner.components.bloomer:PopBloom(inst)
+    else
+        owner.AnimState:ClearBloomEffectHandle()
+    end
+
+    owner.AnimState:ClearOverrideSymbol("swap_body")
+
+    local skin_build = inst:GetSkinBuild()
+    if skin_build ~= nil then
+        owner:PushEvent("unequipskinneditem", inst:GetSkinName())
+    end
+
+    if inst.components.fueled ~= nil then
+        inst.components.fueled:StopConsuming()
+    end
+
+    turnoff_yellow(inst)
 end
 
 if IsModEnable("Last Use Item") then
@@ -97,7 +147,13 @@ if IsModEnable("Last Use Item") then
     end
 
     AddInputHandler(function(key, down, inputType)
-        print("【【【【"..inputType.." key: "..key.." down: "..down)
+        print("【【【【"..inputType.." key: "..key.." down: "..tostring(down))
+        -- 获取是客服端还是服务端
+        if TheNet:GetIsClient() then
+            print("启动-客户端")
+        elseif TheNet:GetIsServer() then
+            print("启动-服务端")
+        end
         PrintInventoryItems()
         if down then
             if key == useHotkey then
@@ -111,7 +167,7 @@ if IsModEnable("Last Use Item") then
     -- 定义一个函数来绑定快捷键
     function BindSwitchWeaponKey()
         print("【【【【加入日志...................................")
-        print(debug.getmetatable(Player))
+        print(GLOBAL.debug.getmetatable(Player))
         print(Player)
         -- 确保监听器只添加一次
         if not Player.onequip_swap_listener_added then
@@ -132,15 +188,17 @@ if IsModEnable("Last Use Item") then
         inst._lastEquippedItem = currentEquipped
     end
 
-    --GLOBAL.TheSim:PushEvent("Playerloaded", { fn = BindSwitchWeaponKey })
-    GLOBAL.AddEventCallback("ms_playerjoined", BindSwitchWeaponKey)
-
-    if TheNet.GetIsServer() then
-        print("【【【【启动-服务端")
-        AddPrefabPostInit("yellowamulet", function(inst)
-
-        end)
-    end
+    --GLOBAL.TheSim:PushEvent("payerloaded", { fn = BindSwitchWeaponKey })
+    --GLOBAL.AddEventCallback("ms_playerjoined", BindSwitchWeaponKey)
+    print("【【【【启动-服务端-重新初始化")
+    AddPrefabPostInit("yellowamulet", function(inst)
+        if not GLOBAL.TheWorld.ismastersim then
+            return
+        end
+        if inst.components.fueled then
+            inst.components.fueled:SetDepletedFn(yishang_onunequip_yellow)
+        end
+    end)
     -- AddComponentPostInit("inventoryitem", function(item)
     --     if item.prefab == "yellowamulet" then
     --         item:ListenForEvent("onbreak", OnAmuletBreak)
@@ -148,10 +206,37 @@ if IsModEnable("Last Use Item") then
     -- end)
 end
 
+-- 深度打印函数
+local function deepPrint(tbl, indent)
+    local indent = indent or ""
+    for k, v in pairs(tbl) do
+        if type(v) == "table" then
+            print(indent .. tostring(k) .. ":")
+            deepPrint(v, indent .. "  ")
+        elseif type(v) == "function" then
+            print(indent .. tostring(k) .. ": <function>")
+        else
+            print(indent .. tostring(k) .. ": " .. tostring(v))
+        end
+    end
+end
+
+
 function PrintInventoryItems()
-    print(debug.getmetatable(Player))
-    print(Player)
+    local Player = GLOBAL.ThePlayer
+    print(GLOBAL.debug.getmetatable(Player))
+    print(tostring(Player))
+    print("----------------------------------------------------------")
+    --local metatable = GLOBAL.debug.getmetatable(Player)
+    --if metatable then
+    --    print("Metatable of Player:")
+    --    deepPrint(metatable, "  ")
+    --else
+    --    print("No metatable found for Player")
+    --end
+
     local inventory = Player and Player.components.inventory
+    print(GLOBAL.debug.getmetatable(Player.components))
 
     if inventory then
         print("Player Inventory Items:")
@@ -166,11 +251,35 @@ function PrintInventoryItems()
 end
 
 function SwapToLastEquippedItem()
-    print(debug.getmetatable(Player))
+    local Player = GLOBAL.ThePlayer
+    print(GLOBAL.debug.getmetatable(Player))
     print(Player)
-    if Player and Player.components.inventory.equipslots then
+    print(Player.components)
+    print(Player.components.inventory)
+    print("?????????")
+    for i,v in ipairs(GLOBAL.AllPlayers) do
+        print(i, v)
+        print("=========")
+        for k, g in pairs(v) do
+            print(k, g)
+        end
+        print("=========")
+    end
+    print("?????????")
+    if Player and Player.components then
+        print("Available components:")
+        for k, v in pairs(Player.components) do
+            print(k)
+        end
+    else
+        print("Player or Player.components is nil")
+    end
+    if Player and Player.components.inventory and Player.components.inventory.equipslots then
+        -- ThePlayer.replica.inventory
+        print("===============================")
         -- 获取当前手持物品
         local currentEquipped = Player.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
+        print("==============================="..tostring(currentEquipped))
         -- 如果有上一次使用的物品
         if Player._lastEquippedItem and Player._lastEquippedItem ~= currentEquipped then
             -- 判断上一个物品是否还在物品栏或背包内

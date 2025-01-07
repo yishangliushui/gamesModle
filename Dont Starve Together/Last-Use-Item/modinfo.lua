@@ -25,16 +25,16 @@ api_version = 10
 -- 获取鼠标键位和常用键盘按键
 local function getAllKeys()
     return {
-        { description = "MOUSE_X1", data = MOUSEBUTTON_X1, hover = "侧键1" },
-        { description = "MOUSE_X2", data = MOUSEBUTTON_X2, hover = "侧键2" }
+        { description = "MOUSE_X1", data = 308, hover = "侧键1" },
+        { description = "MOUSE_X2", data = 309, hover = "侧键2" }
     }
 end
 
 -- 调用函数以打印所有按键的键值
 local keys = getAllKeys()
-for i, v in ipairs(keys) do
-    print(v.description, v.data)
-end
+--for i, v in ipairs(keys) do
+--    print(v.description, v.data)
+--end
 
 -- mod的配置项
 configuration_options = {
@@ -55,6 +55,6 @@ configuration_options = {
         name = "useHotkey", -- 配置项名换，在modmain.lua里获取配置值时要用到
         hover = "触发快捷键设置", -- 鼠标移到配置项上时所显示的信息
         options = keys,
-        default = MOUSEBUTTON_X1                   -- 默认值，与可选项里的值匹配作为默认值
+        default = 308                   -- 默认值，与可选项里的值匹配作为默认值
     }
 }
