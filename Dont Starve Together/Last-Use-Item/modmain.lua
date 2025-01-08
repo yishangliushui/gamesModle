@@ -471,6 +471,6 @@ function SwapToLastEquippedItem_new()
         if item ~= nil then
             Player.replica.inventory:UseItemFromInvTile(item)
         end
-        Player.components.inventory:SwapEquipment(item, EQUIPSLOTS.HANDS)
+        --Player.replica.inventory:SwapEquipment(item, EQUIPSLOTS.HANDS)
     end
 end
