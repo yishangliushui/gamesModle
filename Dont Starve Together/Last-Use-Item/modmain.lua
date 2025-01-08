@@ -55,7 +55,7 @@ local ActionHandler = GLOBAL.ActionHandler
 -- 已知模组索引，用于管理加载的模组信息
 local KnownModIndex = GLOBAL.KnownModIndex
 
-local lastuseditem = require "scripts/lastuseditem"
+--local lastuseditem = require "scripts/lastuseditem"
 
 -- 获取是客服端还是服务端
 if TheNet:GetIsClient() then
@@ -131,12 +131,14 @@ local function yishang_onunequip_yellow(inst, owner)
 end
 
 local function OnEquipped(inst, data)
+    print("【【【【shoudaojianting ")
     if data.slot == EQUIPSLOTS.HANDS then
         inst.components.lastuseditem:SetLastItem(data.item)
     end
 end
 
 local function OnUnequipped(inst, data)
+    print("【【【【shoudaojianting 1123")
     if data.slot == EQUIPSLOTS.HANDS then
         -- 这里可以做任何需要的操作，例如清空或保留最后的物品
     end
@@ -145,10 +147,7 @@ end
 -- 在main.lua或其他合适的地方
 local function OnKeyDown(inst, data)
     if data.key == 308 then -- 替换为你的快捷键
-        local last_item = inst.components.lastuseditem:GetLastItem()
-        if last_item and last_item:IsValid() then
-            inst.components.inventory:Equip(last_item)
-        end
+        SendRPCToServer("RPCSwitchToLastItem")
     end
 end
 
@@ -180,8 +179,12 @@ if IsModEnable("Last Use Item") then
         end
         PrintInventoryItems()
         if down then
+            local Player = GLOBAL.ThePlayer
             if key == useHotkey then
-                SwapToLastEquippedItem()
+                print("Sending RPCSwitchToLastItem for player:", Player.GUID) -- 调试信息
+                --SendModRPCToServer(MOD_RPC["Last Use Item"]["RPCSetLastItem"])
+                --SwapToLastEquippedItem()
+                SwapToLastEquippedItem_new()
             elseif key == GLOBAL.KEY_RIGHTBRACKET then
                 -- 其他逻辑
             end
@@ -216,17 +219,17 @@ if IsModEnable("Last Use Item") then
     --GLOBAL.AddEventCallback("ms_playerjoined", BindSwitchWeaponKey)
     -- 在main.lua或其他合适的地方
 
-    AddPlayersAfterInit(function(inst)
-        print("【【【【启动-服务端-用户")
-        if not GLOBAL.TheWorld.ismastersim then
-            return
+    AddPlayerPostInit(function(inst)
+        print("【【【【启动-服务端-用户"..tostring(GLOBAL.TheWorld.ismastersim))
+        print(inst)
+        if GLOBAL.TheWorld.ismastersim then
+            if not inst.components.lastuseditem then
+                inst:AddComponent("lastuseditem")
+            end
+            -- 添加事件监听
+            inst:ListenForEvent("equipped", OnEquipped)
+            inst:ListenForEvent("unequipped", OnUnequipped)
         end
-        if not inst.components.lastuseditem then
-            inst:AddComponent("lastuseditem")
-        end
-        -- 添加事件监听
-        inst:ListenForEvent("equipped", OnEquipped)
-        inst:ListenForEvent("unequipped", OnUnequipped)
     end)
 
     AddPrefabPostInit("yellowamulet", function(inst)
@@ -239,9 +242,132 @@ if IsModEnable("Last Use Item") then
         end
     end)
 
+    AddComponentPostInit("lastuseditem", function(component)
+        local inst = component.inst
+        if TheWorld.ismastersim then
+            print("监听装备变化111111")
+            -- 定义网络变量
+            inst._last_used_item = net_entity(inst.GUID, "inst._last_used_item")
+
+            -- 监听装备变化
+            inst:ListenForEvent("equip", function(inst, data)
+                print("监听装备变化2222222")
+                if data.slot == EQUIPSLOTS.HANDS then
+                    component:SetLastItem(data.item)
+                    print("监听装备变化2222222"..tostring(data.item).."__"..tostring(data.item.GUID))
+                    inst._last_used_item:set(data.item.GUID) -- 传递GUID
+                end
+            end)
+
+            -- 保存和加载状态
+            function component:OnSave()
+                local data = {}
+                if component.last_item then
+                    data.last_item = component.last_item.GUID
+                end
+                return data
+            end
+
+            function component:OnLoad(data)
+                if data and data.last_item then
+                    local last_item = EntityRegistry[data.last_item]
+                    if last_item and last_item:IsValid() then
+                        component:SetLastItem(last_item)
+                        inst._last_used_item:set(last_item.GUID) -- 传递GUID
+                    end
+                end
+            end
+        else
+            -- 客户端获取最后使用的物品
+            function component:GetLastItem()
+                local guid = inst._last_used_item:value()
+                if guid ~= 0 then
+                    return EntityRegistry[guid]
+                end
+                return nil
+            end
+        end
+    end)
+
+    -- common.lua
+    local function RPCSetLastItem(player)
+        print("收到客户端的请求。。。。。。")
+        local ThePlayer = GLOBAL.ThePlayer
+        print(tostring(ThePlayer))
+        if ThePlayer then
+            print(tostring(ThePlayer.components))
+            print(tostring(ThePlayer.components.inventory))
+        end
+        for i,v in ipairs(GLOBAL.AllPlayers) do
+            print(i, v)
+            print("111=========")
+            for k, g in pairs(v) do
+                print(k, g)
+            end
+            print("222=========")
+        end
+        if ThePlayer and ThePlayer.components.inventory then
+            -- ThePlayer.replica.inventory
+            print("1===============================")
+            -- 获取当前手持物品
+            local currentEquipped = ThePlayer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
+            print("2==============================="..tostring(currentEquipped))
+            -- 如果有上一次使用的物品
+            if ThePlayer._lastEquippedItem and ThePlayer._lastEquippedItem ~= currentEquipped then
+                -- 判断上一个物品是否还在物品栏或背包内
+                local lastEquippedItem = ThePlayer._lastEquippedItem
+                local foundItem = player.components.inventory:FindItem(function(item)
+                    return item == lastEquippedItem
+                end)
+                -- 如果上一个物品仍在物品栏或背包内，则进行切换
+                if foundItem then
+                    print("3==============================="..tostring(ThePlayer._lastEquippedItem))
+                    ThePlayer._secondLastEquippedItem = currentEquipped
+                    ThePlayer.components.inventory:Equip(foundItem)
+                    ThePlayer._lastEquippedItem = player._secondLastEquippedItem
+                else
+                    print("Last equipped item is no longer in inventory.")
+                end
+            else
+                print("4==============================="..tostring(ThePlayer._lastEquippedItem))
+                ThePlayer._lastEquippedItem = currentEquipped
+            end
+        end
+        if player and player.components.inventory then
+            -- ThePlayer.replica.inventory
+            print("1=1==============================")
+            -- 获取当前手持物品
+            local currentEquipped = player.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
+            print("2=1=============================="..tostring(currentEquipped))
+            -- 如果有上一次使用的物品
+            if player._lastEquippedItem and player._lastEquippedItem ~= currentEquipped then
+                -- 判断上一个物品是否还在物品栏或背包内
+                local lastEquippedItem = player._lastEquippedItem
+                local foundItem = player.components.inventory:FindItem(function(item)
+                    return item == lastEquippedItem
+                end)
+                -- 如果上一个物品仍在物品栏或背包内，则进行切换
+                if foundItem then
+                    print("3=1=============================="..tostring(player._lastEquippedItem))
+                    player._secondLastEquippedItem = currentEquipped
+                    player.components.inventory:Equip(foundItem)
+                    player._lastEquippedItem = player._secondLastEquippedItem
+                else
+                    print("Last equipped item is no longer in inventory.")
+                end
+            else
+                print("4=1=============================="..tostring(player._lastEquippedItem))
+                player._lastEquippedItem = currentEquipped
+            end
+        end
+    end
+
+
+    AddModRPCHandler("Last Use Item", "RPCSetLastItem", RPCSetLastItem)
+
     -- 注册输入监听
-    TheInput:AddKeyBoardAction("ToggleLastItem")
-    TheInput:AddKeyUpFunction("ToggleLastItem", OnKeyDown)
+    --TheInput:AddKeyHandler("ToggleLastItem")
+    --TheInput:AddKeyHandler("ToggleLastItem", OnKeyDown)
 
     -- AddComponentPostInit("inventoryitem", function(item)
     --     if item.prefab == "yellowamulet" then
@@ -280,66 +406,44 @@ function PrintInventoryItems()
     --end
     local inventory = Player and Player.replica.inventory
     if inventory then
-        print("Player Inventory Items:")
-        for i, v in pairs(inventory.itemslots) do
+        print("Player Inventory1 Items:")
+        for i, v in pairs(inventory) do
             if v then
-                print(i, v.prefab)
+                print(i, v)
             end
         end
     else
         print("Player does not have an inventory component.")
     end
-
-    inventory = Player and Player.components.inventory
-    print(GLOBAL.debug.getmetatable(Player.components))
-
-    if inventory then
-        print("Player Inventory Items:")
-        for i, v in pairs(inventory.itemslots) do
-            if v then
-                print(i, v.prefab)
+    if Player then
+        print('.......'..tostring(Player.components.inventory))
+        if Player.components.inventory then
+            print("Player Inventory2 Items:")
+            for i, v in pairs(inventory.itemslots) do
+                if v then
+                    print(i, v.prefab)
+                end
             end
+        else
+            print("Player does not have an inventory component.")
         end
-    else
-        print("Player does not have an inventory component.")
     end
 end
 
 function SwapToLastEquippedItem()
     local Player = GLOBAL.ThePlayer
     print(GLOBAL.debug.getmetatable(Player))
-    print(Player)
-    print(Player.components)
-    print(Player.components.inventory)
-    print("?????????")
-    for i,v in ipairs(GLOBAL.AllPlayers) do
-        print(i, v)
-        print("=========")
-        for k, g in pairs(v) do
-            print(k, g)
-        end
-        print("=========")
-    end
-    print("?????????")
-    if Player and Player.components then
-        print("Available components:")
-        for k, v in pairs(Player.components) do
-            print(k)
-        end
-    else
-        print("Player or Player.components is nil")
-    end
-    if Player and Player.components.inventory and Player.components.inventory.equipslots then
+    if Player and Player.replica.inventory and Player.replica.inventory.equipslots then
         -- ThePlayer.replica.inventory
         print("===============================")
         -- 获取当前手持物品
-        local currentEquipped = Player.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
+        local currentEquipped = Player.replica.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
         print("==============================="..tostring(currentEquipped))
         -- 如果有上一次使用的物品
         if Player._lastEquippedItem and Player._lastEquippedItem ~= currentEquipped then
             -- 判断上一个物品是否还在物品栏或背包内
             local lastEquippedItem = Player._lastEquippedItem
-            local foundItem = Player.components.inventory:FindItem(function(item)
+            local foundItem = Player.replica.inventory:FindItem(function(item)
                 return item == lastEquippedItem
             end)
             -- 如果上一个物品仍在物品栏或背包内，则进行切换
@@ -350,6 +454,20 @@ function SwapToLastEquippedItem()
             else
                 print("Last equipped item is no longer in inventory.")
             end
+        end
+    end
+end
+
+
+function SwapToLastEquippedItem_new()
+    local Player = GLOBAL.ThePlayer
+    print(GLOBAL.debug.getmetatable(Player))
+    local inventory = Player.replica.inventory
+    if inventory ~= nil and inventory:IsVisible() then
+        local hot_key_num = 1
+        local item = inventory:GetItemInSlot(hot_key_num)
+        if item ~= nil then
+            Player.replica.inventory:UseItemFromInvTile(item)
         end
     end
 end
