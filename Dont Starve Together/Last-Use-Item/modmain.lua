@@ -461,6 +461,8 @@ end
 
 function SwapToLastEquippedItem_new()
     local Player = GLOBAL.ThePlayer
+    local  debug_str = Player:GetDebugString()
+    print(debug_str)
     print(GLOBAL.debug.getmetatable(Player))
     local inventory = Player.replica.inventory
     if inventory ~= nil and inventory:IsVisible() then
@@ -469,5 +471,6 @@ function SwapToLastEquippedItem_new()
         if item ~= nil then
             Player.replica.inventory:UseItemFromInvTile(item)
         end
+        Player.components.inventory:SwapEquipment(item, EQUIPSLOTS.HANDS)
     end
 end
