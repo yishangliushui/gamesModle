@@ -132,6 +132,7 @@ end
 
 local function OnEquipped(inst, data)
     print("【【【【shoudaojianting ")
+    print("..."..tostring(data))
     if data.slot == EQUIPSLOTS.HANDS then
         inst.components.lastuseditem:SetLastItem(data.item)
     end
@@ -461,7 +462,7 @@ end
 
 function SwapToLastEquippedItem_new()
     local Player = GLOBAL.ThePlayer
-    local  debug_str = Player:GetDebugString()
+    local debug_str = Player:GetDebugString()
     print(debug_str)
     print(GLOBAL.debug.getmetatable(Player))
     local inventory = Player.replica.inventory
