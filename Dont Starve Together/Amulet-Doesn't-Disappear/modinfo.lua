@@ -1,7 +1,7 @@
 -- 名称
-name = "Last Use Item"
+name = "Amulet-Doesn't-Disappear"
 -- 描述
-description = "使用上一个使用的物品"
+description = "修改护符使用天数，1天太容易忘记加燃料了。"
 -- 作者
 author = "yishang"
 -- 版本
@@ -15,26 +15,16 @@ forumthread = ""
 dst_compatible = true
 dont_starve_compatible = true
 -- 是否是客户端mod
-client_only_mod = true
+client_only_mod = false
 -- 是否是所有客户端都需要安装
-all_clients_require_mod = false
+all_clients_require_mod = true
 -- 饥荒api版本，固定填10
 api_version = 10
 
-
--- 获取鼠标键位和常用键盘按键
-local function getAllKeys()
-    return {
-        { description = "MOUSE_X1", data = 1005, hover = "侧键1" },
-        { description = "MOUSE_X2", data = 1006, hover = "侧键2" }
-    }
+local useDays = {}
+for i = 1, 5 do
+    useDays[i] = { description = i .. "天", hover = i .. "天", data = i }
 end
-
--- 调用函数以打印所有按键的键值
-local keys = getAllKeys()
---for i, v in ipairs(keys) do
---    print(v.description, v.data)
---end
 
 -- mod的配置项
 configuration_options = {
@@ -52,9 +42,9 @@ configuration_options = {
                     } },
         default = 0                   -- 默认值，与可选项里的值匹配作为默认值
     }, {
-        name = "useHotkey", -- 配置项名换，在modmain.lua里获取配置值时要用到
-        hover = "触发快捷键设置", -- 鼠标移到配置项上时所显示的信息
-        options = keys,
-        default = 1005                   -- 默认值，与可选项里的值匹配作为默认值
+        name = "useDays", -- 配置项名换，在modmain.lua里获取配置值时要用到
+        hover = "设置黄色护符使用天数", -- 鼠标移到配置项上时所显示的信息
+        options = useDays,
+        default = 2                   -- 默认值，与可选项里的值匹配作为默认值
     }
 }
