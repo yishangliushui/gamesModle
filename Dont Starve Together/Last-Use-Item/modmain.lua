@@ -162,6 +162,42 @@ if IsModEnable(modname) then
 
 end
 
+function OneClickHeal()
+    local Player = GLOBAL.ThePlayer
+    local inventory = Player.replica.inventory
+    if inventory ~= nil and inventory:IsVisible() then
+        -- 获取物品栏中的所有物品
+        local items = inventory:GetItems()
+
+        -- 初始化变量存储最佳食物物品
+        local bestFoodItem = nil
+        local maxHealthGain = 0
+
+        -- 遍历所有物品，寻找加血最多的食物，排除曼德拉相关物品、眼球和犀牛角
+        for _, item in pairs(items) do
+            if item ~= nil then
+                -- 跳过当前循环
+                goto continue
+            end
+            if item.components.edible ~= nil and item.components.edible.healthvalue > 0 then
+                local itemName = item.prefab
+                if itemName ~= "mandra" and itemName ~= "mandra_meat" and itemName ~= "eyeball" and itemName ~= "rhino_horn" then
+                    if item.components.edible.healthvalue > maxHealthGain then
+                        bestFoodItem = item
+                        maxHealthGain = item.components.edible.healthvalue
+                    end
+                end
+            end
+        end
+
+        -- 如果找到最佳食物物品，则食用它
+        if bestFoodItem ~= nil then
+            Player:PushAction(GLOBAL.InvAction(bestFoodItem, "EAT"))
+        end
+    end
+end
+
+
 function SwapToLastEquippedItem_new()
     local Player = GLOBAL.ThePlayer
     local debug_str = Player:GetDebugString()
