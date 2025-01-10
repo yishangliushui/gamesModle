@@ -129,6 +129,8 @@ if IsModEnable(modname) then
         return
     end
 
+    local keyStates = {}
+
     -- 添加监听事件
     function AddInputHandler(handler)
         GLOBAL.TheInput:AddKeyDownHandler(function(key, down)
@@ -140,9 +142,35 @@ if IsModEnable(modname) then
         end)
     end
 
+    -- 监听所有按键的按下事件
+    TheInput:AddKeyDownHandler(function(key, down)
+        local keyname = TheInput:GetKeyName(key)
+        -- 更新按键状态
+        keyStates[keyname] = true
+        -- 检查组合键 Ctrl + A
+        if keyStates["CTRL"] and keyStates["A"] then
+            print("Ctrl + A pressed!")
+            -- 在这里添加你希望执行的操作
+            -- 重置状态以避免重复触发
+            keyStates["CTRL"] = false
+            keyStates["A"] = false
+        end
+        -- 检查组合键 Shift + B
+        if keyStates["SHIFT"] and keyStates["B"] then
+            print("Shift + B pressed!")
+            -- 在这里添加你希望执行的操作
+            -- 重置状态以避免重复触发
+            keyStates["SHIFT"] = false
+            keyStates["B"] = false
+        end
+    end)
+
     AddInputHandler(function(key, down, inputType)
         printString(inputType.." key: "..key.." down: "..tostring(down), "handler_")
+        -- 记录组合键
+        keyStates[key] = down
         if down then
+
             if key == useHotkey then
                 --SendModRPCToServer(MOD_RPC["Last Use Item"]["RPCSetLastItem"])
                 --SwapToLastEquippedItem()
