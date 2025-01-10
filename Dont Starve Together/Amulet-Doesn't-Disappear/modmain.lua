@@ -59,21 +59,39 @@ local KnownModIndex = GLOBAL.KnownModIndex
 local modname = "Amulet-Doesn't-Disappear"
 
 local function printString(data, str, count)
-    if count ~= nil then
-        count = 1
+    -- 初始化默认值
+    if count == nil then
+        count = 5
     end
-    if type(data) == "table" then
-        for i, k in pairs(data) do
-            print(modname .. "_" .. str .. "|count=" .. count .. "_...i=" .. tostring(i) .. "|k=" .. tostring(k))
-            if count < 5 then
-                printString(k, str .. "_k", count + 1)
+    if str == nil then
+        str = ""
+    end
+
+    -- 构建字符串的辅助函数
+    local function buildString(data, count, indent)
+        indent = indent or ""
+        if type(data) == "table" and count < 6 then
+            local temp = {}
+            for i, k in pairs(data) do
+                if type(i) == "number" then
+                    table.insert(temp, string.format("%s%s", indent .. "  ", buildString(k, count + 1, indent .. "  ")))
+                else
+                    table.insert(temp, string.format("%s%s=%s", indent .. "  ", tostring(i), buildString(k, count + 1, indent .. "  ")))
+                end
             end
+            return "{\n" .. table.concat(temp, ",\n") .. "\n" .. indent .. "}"
+        elseif type(data) == "function" then
+            return tostring(data)
+        else
+            return tostring(data)
         end
-    elseif type(data) == "function" then
-        print(modname .. "_" .. str .. "count=" .. count .. "_...function" .. tostring(data))
-    else
-        print(modname .. "_" .. str .. "count=" .. count "_...data=" .. tostring(data))
     end
+
+    -- 构建最终的输出字符串
+    local output = string.format("[%s][%s]...data=%s", "", str, buildString(data, count, ""))
+
+    -- 打印输出
+    print(output)
 end
 
 -- 获取是客服端还是服务端

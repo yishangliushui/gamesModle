@@ -58,21 +58,39 @@ local KnownModIndex = GLOBAL.KnownModIndex
 local modname = "Last Use Item"
 
 local function printString(data, str, count)
-    if count ~= nil then
-        count = 1
+    -- 初始化默认值
+    if count == nil then
+        count = 5
     end
-    if type(data) == "table" then
-        for i, k in pairs(data) do
-            print(modname .. "_" .. str .. "|count=" .. count .. "_...i=" .. tostring(i) .. "|k=" .. tostring(k))
-            if count < 5 then
-                printString(k, str .. "_k", count + 1)
+    if str == nil then
+        str = ""
+    end
+
+    -- 构建字符串的辅助函数
+    local function buildString(data, count, indent)
+        indent = indent or ""
+        if type(data) == "table" and count < 6 then
+            local temp = {}
+            for i, k in pairs(data) do
+                if type(i) == "number" then
+                    table.insert(temp, string.format("%s%s", indent .. "  ", buildString(k, count + 1, indent .. "  ")))
+                else
+                    table.insert(temp, string.format("%s%s=%s", indent .. "  ", tostring(i), buildString(k, count + 1, indent .. "  ")))
+                end
             end
+            return "{\n" .. table.concat(temp, ",\n") .. "\n" .. indent .. "}"
+        elseif type(data) == "function" then
+            return tostring(data)
+        else
+            return tostring(data)
         end
-    elseif type(data) == "function" then
-        print(modname .. "_" .. str .. "count=" .. count .. "_...function" .. tostring(data))
-    else
-        print(modname .. "_" .. str .. "count=" .. count "_...data=" .. tostring(data))
     end
+
+    -- 构建最终的输出字符串
+    local output = string.format("[%s][%s]...data=%s", "", str, buildString(data, count, ""))
+
+    -- 打印输出
+    print(output)
 end
 
 -- 获取是客服端还是服务端
@@ -93,6 +111,7 @@ for k, dir in pairs(moddir) do
     enablemods[dir] = name
     modIndex[name] = dir
     printString("已启用的Mod: "..name..k, "mod_")
+    GetConfig()
 end
 
 -- MOD是否开启
@@ -104,6 +123,7 @@ end
 if IsModEnable(modname) then
     local useHotkeyEable = GetModConfigData("useHotkeyEable")
     local useHotkey = GetModConfigData("useHotkey")
+    local moreEable = GetModConfigData("moreEable")
 
     if useHotkeyEable == 0 then
         return
@@ -111,12 +131,13 @@ if IsModEnable(modname) then
 
     -- 添加监听事件
     function AddInputHandler(handler)
-        GLOBAL.TheInput:AddKeyHandler(function(key, down)
-            handler(key, down, "keyUp")
+        GLOBAL.TheInput:AddKeyDownHandler(function(key, down)
+            handler(key, down, "keyboard")
         end)
-        --GLOBAL.TheInput:AddMouseButtonHandler(function(key, down)
-        --    handler(key, down, "mouse")
-        --end)
+
+        GLOBAL.TheInput:AddMouseButtonHandler(function(key, down)
+            handler(key, down, "mouse")
+        end)
     end
 
     AddInputHandler(function(key, down, inputType)
@@ -125,22 +146,21 @@ if IsModEnable(modname) then
             if key == useHotkey then
                 --SendModRPCToServer(MOD_RPC["Last Use Item"]["RPCSetLastItem"])
                 --SwapToLastEquippedItem()
-                SwapToLastEquippedItem_new()
-            elseif key == GLOBAL.KEY_RIGHTBRACKET then
+                SwapToLastEquippedItem(moreEable)
+            elseif key == 1006 then
                 -- 其他逻辑
+                OneClickHeal()
             end
         end
     end)
 
+
     function OnEquip(inst, equipInst)
-        printString(inst, "OnEquip_inst_")
         printString(equipInst, "OnEquip_equipInst_")
         if equipInst and equipInst.prefab then
             inst._lastEquippedItem = equipInst
             return
         end
-        local currentEquipped = inst.replica.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
-        inst._lastEquippedItem = currentEquipped
     end
 
 
@@ -164,41 +184,28 @@ end
 
 function OneClickHeal()
     local Player = GLOBAL.ThePlayer
+    if Player or Player.replica or Player.replica.inventory then
+        return
+    end
     local inventory = Player.replica.inventory
-    if inventory ~= nil and inventory:IsVisible() then
+    if inventory:IsVisible() then
         -- 获取物品栏中的所有物品
         local items = inventory:GetItems()
-
-        -- 初始化变量存储最佳食物物品
-        local bestFoodItem = nil
-        local maxHealthGain = 0
-
-        -- 遍历所有物品，寻找加血最多的食物，排除曼德拉相关物品、眼球和犀牛角
-        for _, item in pairs(items) do
-            if item ~= nil then
-                -- 跳过当前循环
-                goto continue
-            end
-            if item.components.edible ~= nil and item.components.edible.healthvalue > 0 then
-                local itemName = item.prefab
-                if itemName ~= "mandra" and itemName ~= "mandra_meat" and itemName ~= "eyeball" and itemName ~= "rhino_horn" then
-                    if item.components.edible.healthvalue > maxHealthGain then
-                        bestFoodItem = item
-                        maxHealthGain = item.components.edible.healthvalue
+        if items ~= nil then
+            for _, item in pairs(items) do
+                if item ~= nil then
+                    local itemName = item.prefab
+                    if itemName ~= "mandra" and itemName ~= "mandra_meat" and itemName ~= "eyeball" and itemName ~= "rhino_horn" then
+                        Player:PushAction(GLOBAL.InvAction(item, "EAT"))
                     end
                 end
             end
-        end
-
-        -- 如果找到最佳食物物品，则食用它
-        if bestFoodItem ~= nil then
-            Player:PushAction(GLOBAL.InvAction(bestFoodItem, "EAT"))
         end
     end
 end
 
 
-function SwapToLastEquippedItem_new()
+function SwapToLastEquippedItem(moreEable)
     local Player = GLOBAL.ThePlayer
     local debug_str = Player:GetDebugString()
     printString(debug_str, "Player_")
@@ -213,16 +220,92 @@ function SwapToLastEquippedItem_new()
         local lastEquippedItem = Player._lastEquippedItem
         if lastEquippedItem ~= nil then
             -- 假设 lastEquippedItem 是物品的唯一标识符（如物品名或ID）
+            local notSourceItem
             local foundItems = inventory:GetItems()
-            for index, item in pairs(foundItems) do
-                -- 检查每个物品是否与 lastEquippedItem 匹配
-                -- 这里假设可以用 item.name
-                print("index="..index.."|item.name"..item.name.."|lastEquippedItem.name"..lastEquippedItem.name.."lastEquippedItem==item="..tostring(lastEquippedItem==item))
-                if item.name == lastEquippedItem.name then
-                    -- 使用找到的物品
-                    Player.replica.inventory:UseItemFromInvTile(lastEquippedItem)
-                    Player._lastEquippedItem = currentEquipped
-                    break
+            if foundItems ~= nil then
+                for index, item in pairs(foundItems) do
+                    -- 检查每个物品是否与 lastEquippedItem 匹配
+                    -- 这里假设可以用 item.name
+                    if item ~= nil then
+                        print("index="..index.."|item.name"..item.name.."|lastEquippedItem.name"..lastEquippedItem.name.."lastEquippedItem==item="..tostring(lastEquippedItem==item))
+                        if item == lastEquippedItem then
+                            -- 使用找到的物品
+                            Player._lastEquippedItemCount = 1
+                            inventory:UseItemFromInvTile(lastEquippedItem)
+                            Player._lastEquippedItem = currentEquipped
+                            return
+                        end
+                        if item.name == lastEquippedItem.name then
+                            notSourceItem = item
+                        end
+                    end
+                end
+            end
+
+            -- 如果在主物品栏中没有找到，则检查body容器中的物品
+            local overflowContainer = inventory:GetOverflowContainer()
+            printString(overflowContainer:GetItems(), "__overflowContainer_______3", 1)
+
+            if overflowContainer ~= nil then
+                local overflowItems =overflowContainer:GetItems()
+                if overflowItems ~= nil then
+                    for index, item in pairs(overflowItems) do
+                        if item ~= nil then
+                            print("index="..index.."|item.name"..item.name.."|lastEquippedItem.name"..lastEquippedItem.name.."lastEquippedItem==item="..tostring(lastEquippedItem==item))
+                            if item == lastEquippedItem then
+                                -- 使用找到的物品
+                                Player._lastEquippedItemCount = 1
+                                inventory:UseItemFromInvTile(lastEquippedItem)
+                                Player._lastEquippedItem = currentEquipped
+                                return
+                            end
+                            if item.name == lastEquippedItem.name then
+                                notSourceItem = item
+                            end
+                        end
+                    end
+                end
+            end
+            if notSourceItem ~= nil then
+                inventory:UseItemFromInvTile(notSourceItem)
+                Player._lastEquippedItem = currentEquipped
+                Player._lastEquippedItemCount = 1
+                Player.replica.talker:Say(MESSAGE_STRING.notSourceItem, 3)
+                return
+            end
+            if Player._lastEquippedItemCount ~= nil then
+                Player._lastEquippedItemCount = 1
+            end
+            Player._lastEquippedItem = currentEquipped
+
+            if moreEable then
+                Player._lastEquippedItemCount = Player._lastEquippedItemCount + 1
+                if Player._lastEquippedItemCount < 5 then
+                    Player.replica.talker:Say(MESSAGE_STRING.notLastItem, 3)
+                elseif Player._lastEquippedItemCount == 5 then
+                    Player.replica.talker:Say(MESSAGE_STRING.notAngryItem, 3)
+                elseif Player._lastEquippedItemCount > 5 then
+                    -- 定时任务 持续5秒 每秒掉血和san值5点
+                    -- 启动定时任务，持续5秒，每秒减少生命值和理智值
+                    Player.replica.talker:Say(MESSAGE_STRING.notAngryIng, duration)
+                    Player._lastEquippedItemCount = 0
+                    if Player.angryIngBool == nil or not Player.angryIngBool then
+                        local damagePerSecond = 5
+                        local sanityDamagePerSecond = 5
+                        local duration = 5 -- 持续5秒
+                        Player.angryIngBool = true
+                        for i = 1, duration do
+                            Player:DoTaskInTime(i, function()
+                                if Player and Player.replica.health and Player.components.sanity then
+                                    Player.replica.health:DoDelta(-damagePerSecond)
+                                    Player.replica.sanity:DoDelta(-sanityDamagePerSecond)
+                                end
+                                if i == duration then
+                                    Player.angryIngBool = false
+                                end
+                            end)
+                        end
+                    end
                 end
             end
             --local hot_key_num = 1
