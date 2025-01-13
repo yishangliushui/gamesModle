@@ -30,6 +30,7 @@ local function getAllKeys()
         { description = "MOUSE_X1", data = 1005, hover = "侧键1" },
         { description = "MOUSE_X2", data = 1006, hover = "侧键2" },
         { description = "LEFT_CTRL", data = 401, hover = "左Ctrl" },
+        { description = "LEFT_SHIFT", data = 402, hover = "左Shift" },
         { description = "关闭", data = default, hover = "关闭" }
     }
 end
