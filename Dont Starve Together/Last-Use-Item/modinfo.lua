@@ -22,19 +22,29 @@ all_clients_require_mod = false
 api_version = 10
 
 
+local default = 99999
+
 -- 获取鼠标键位和常用键盘按键
 local function getAllKeys()
     return {
         { description = "MOUSE_X1", data = 1005, hover = "侧键1" },
-        { description = "MOUSE_X2", data = 1006, hover = "侧键2" }
+        { description = "MOUSE_X2", data = 1006, hover = "侧键2" },
+        { description = "LEFT_CTRL", data = 401, hover = "左Ctrl" },
+        { description = "关闭", data = default, hover = "关闭" }
     }
 end
 
 -- 调用函数以打印所有按键的键值
 local keys = getAllKeys()
---for i, v in ipairs(keys) do
---    print(v.description, v.data)
---end
+
+local function AddButton(name, label, df)
+    configuration_options[#configuration_options + 1] = {
+        name = name,
+        label = label,
+        options = keys,
+        default = df,
+    }
+end
 
 -- mod的配置项
 configuration_options = {
@@ -51,10 +61,16 @@ configuration_options = {
                         data = 1
                     } },
         default = 0                   -- 默认值，与可选项里的值匹配作为默认值
-    }, {
-        name = "useHotkey", -- 配置项名换，在modmain.lua里获取配置值时要用到
-        hover = "触发快捷键设置", -- 鼠标移到配置项上时所显示的信息
-        options = keys,
-        default = 1005                   -- 默认值，与可选项里的值匹配作为默认值
     }
 }
+
+
+AddButton("useLastHotkey", "手持使用上一个物品快捷键", default)
+AddButton("axeHotkey_1", "斧子组合键1", default)
+AddButton("axeHotkey_2", "斧子组合键2", default)
+AddButton("mattockHotkey_1", "镐子组合键1", default)
+AddButton("mattockHotkey_2", "镐子组合键2", default)
+AddButton("shovelHotkey_1", "铲子组合键1", default)
+AddButton("shovelHotkey_2", "铲子组合键2", default)
+AddButton("hammerHotkey_1", "锤子组合键1", default)
+AddButton("hammerHotkey_2", "锤子组合键2", default)

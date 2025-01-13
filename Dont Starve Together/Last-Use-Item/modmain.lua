@@ -1,4 +1,6 @@
-GLOBAL.setmetatable(env,{__index=function(t,k) return GLOBAL.rawget(GLOBAL,k) end})
+GLOBAL.setmetatable(env, { __index = function(t, k)
+    return GLOBAL.rawget(GLOBAL, k)
+end })
 -- 全局的require函数，用于加载模块
 local require = GLOBAL.require
 -- 字符串资源，用于界面显示和支持
@@ -54,8 +56,9 @@ local ActionHandler = GLOBAL.ActionHandler
 -- 已知模组索引，用于管理加载的模组信息
 local KnownModIndex = GLOBAL.KnownModIndex
 
-
 local modname = "Last Use Item"
+
+local defaultValue = 99999
 
 local function printString(data, str, count)
     -- 初始化默认值
@@ -100,7 +103,6 @@ elseif TheNet:GetIsServer() then
     printString("启动-服务端")
 end
 
-
 local moddir = KnownModIndex:GetModsToLoad(true)
 local enablemods = {}
 local modIndex = {}
@@ -110,107 +112,16 @@ for k, dir in pairs(moddir) do
     local name = info and info.name or "unknow"
     enablemods[dir] = name
     modIndex[name] = dir
-    printString("已启用的Mod: "..name..k, "mod_")
+    printString("已启用的Mod: " .. name .. k, "mod_")
     GetConfig()
 end
 
 -- MOD是否开启
-function IsModEnable(name)
+local function IsModEnable(name)
     return modIndex[name] ~= nil or enablemods[name] ~= nil
 end
 
-
-if IsModEnable(modname) then
-    local useHotkeyEable = GetModConfigData("useHotkeyEable")
-    local useHotkey = GetModConfigData("useHotkey")
-    local moreEable = GetModConfigData("moreEable")
-
-    if useHotkeyEable == 0 then
-        return
-    end
-
-    local keyStates = {}
-
-    -- 添加监听事件
-    function AddInputHandler(handler)
-        GLOBAL.TheInput:AddKeyDownHandler(function(key, down)
-            handler(key, down, "keyboard")
-        end)
-
-        GLOBAL.TheInput:AddMouseButtonHandler(function(key, down)
-            handler(key, down, "mouse")
-        end)
-    end
-
-    -- 监听所有按键的按下事件
-    TheInput:AddKeyDownHandler(function(key, down)
-        local keyname = TheInput:GetKeyName(key)
-        -- 更新按键状态
-        keyStates[keyname] = true
-        -- 检查组合键 Ctrl + A
-        if keyStates["CTRL"] and keyStates["A"] then
-            print("Ctrl + A pressed!")
-            -- 在这里添加你希望执行的操作
-            -- 重置状态以避免重复触发
-            keyStates["CTRL"] = false
-            keyStates["A"] = false
-        end
-        -- 检查组合键 Shift + B
-        if keyStates["SHIFT"] and keyStates["B"] then
-            print("Shift + B pressed!")
-            -- 在这里添加你希望执行的操作
-            -- 重置状态以避免重复触发
-            keyStates["SHIFT"] = false
-            keyStates["B"] = false
-        end
-    end)
-
-    AddInputHandler(function(key, down, inputType)
-        printString(inputType.." key: "..key.." down: "..tostring(down), "handler_")
-        -- 记录组合键
-        keyStates[key] = down
-        if down then
-
-            if key == useHotkey then
-                --SendModRPCToServer(MOD_RPC["Last Use Item"]["RPCSetLastItem"])
-                --SwapToLastEquippedItem()
-                SwapToLastEquippedItem(moreEable)
-            elseif key == 1006 then
-                -- 其他逻辑
-                OneClickHeal()
-            end
-        end
-    end)
-
-
-    function OnEquip(inst, equipInst)
-        printString(equipInst, "OnEquip_equipInst_")
-        if equipInst and equipInst.prefab then
-            inst._lastEquippedItem = equipInst
-            return
-        end
-    end
-
-
-    AddPlayerPostInit(function(inst)
-        printString("添加事件"..tostring(GLOBAL.TheWorld.ismastersim))
-        -- 确保监听器只添加一次
-        if not inst.onequip_swap_listener_added then
-            inst:ListenForEvent("equip", OnEquip)
-            inst.onequip_swap_listener_added = true
-        end
-    end)
-
-
-    local function RPCSetLastItem(player)
-        printString(player, "收到客户端的请求。。。。。。")
-    end
-
-    AddModRPCHandler(modname, "RPCSetLastItem", RPCSetLastItem)
-
-end
-
-function OneClickHeal()
+local function OneClickHeal()
     local Player = GLOBAL.ThePlayer
     if Player or Player.replica or Player.replica.inventory then
         return
@@ -232,68 +143,106 @@ function OneClickHeal()
     end
 end
 
+local function SwapToolEquippedItem(player, equippedItem, currentEquipped, toolName)
+    if equippedItem ~= nil then
+        printString(equippedItem:GetItems(), "__overflowContainer___", 1)
+        local Items = equippedItem:GetItems()
+        if Items ~= nil then
+            return false
+        end
+        for index, item in pairs(Items) do
+            if item ~= nil then
+                printString("index=" .. index .. "|item.name" .. item.name, "SwapToolEquippedItem_")
+                if item:HasTag(toolName) then
+                    player.replica.inventory:UseItemFromInvTile(item)
+                    player._lastEquippedItem = currentEquipped
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
 
-function SwapToLastEquippedItem(moreEable)
+local function SwapWeaponEquippedItem(player, equippedItem, currentEquipped, lastEquippedItem)
+    if equippedItem == nil then
+        return nil, false
+    end
+    local items = equippedItem:GetItems()
+    printString(items, "__SwapWeaponContainer_______", 1)
+    local notSourceItem
+    if items ~= nil then
+        for index, item in pairs(items) do
+            -- 检查每个物品是否与 lastEquippedItem 匹配
+            -- 这里假设可以用 item.name
+            if item ~= nil then
+                pringString("index=" .. index .. "|item.name" .. item.name .. "|lastEquippedItem.name" .. lastEquippedItem.name .. "lastEquippedItem==item=" .. tostring(lastEquippedItem == item), "SwapWeaponEquippedItem_")
+                if item == lastEquippedItem then
+                    -- 使用找到的物品
+                    player._lastEquippedItemCount = 1
+                    player.replica.inventory:UseItemFromInvTile(lastEquippedItem)
+                    player._lastEquippedItem = currentEquipped
+                    return nil, true
+                end
+                if not notSourceItem and item.name == lastEquippedItem.name then
+                    notSourceItem = item
+                end
+            end
+        end
+    end
+    return notSourceItem, false
+end
+
+local function SwapToolsEquippedItem(toolName)
     local Player = GLOBAL.ThePlayer
-    local debug_str = Player:GetDebugString()
-    printString(debug_str, "Player_")
+    if Player or Player.replica or Player.replica.inventory then
+        return
+    end
+    local inventory = Player.replica.inventory
+    -- 获取当前手持物品
+    if inventory ~= nil and inventory:IsVisible() then
+        local currentEquipped = inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
+        if SwapToolEquippedItem(Player, inventory, currentEquipped, toolName) then
+            return
+        end
+        local overflowContainer = inventory:GetOverflowContainer()
+        SwapToolEquippedItem(Player, overflowContainer, currentEquipped, toolName)
+    end
+end
+
+local function SwapToLastEquippedItem(moreEable)
+    local Player = GLOBAL.ThePlayer
+    if Player or Player.replica or Player.replica.inventory then
+        return
+    end
+    printString(Player:GetDebugString(), "Player_")
     local inventory = Player.replica.inventory
     printString(inventory, "inventory_")
     -- 获取当前手持物品
     if inventory ~= nil and inventory:IsVisible() then
         local currentEquipped = inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
         if currentEquipped ~= nil then
-            print("_____"..currentEquipped:GetDebugString())
+            print("_____" .. currentEquipped:GetDebugString())
         end
         local lastEquippedItem = Player._lastEquippedItem
         if lastEquippedItem ~= nil then
             -- 假设 lastEquippedItem 是物品的唯一标识符（如物品名或ID）
-            local notSourceItem
-            local foundItems = inventory:GetItems()
-            if foundItems ~= nil then
-                for index, item in pairs(foundItems) do
-                    -- 检查每个物品是否与 lastEquippedItem 匹配
-                    -- 这里假设可以用 item.name
-                    if item ~= nil then
-                        print("index="..index.."|item.name"..item.name.."|lastEquippedItem.name"..lastEquippedItem.name.."lastEquippedItem==item="..tostring(lastEquippedItem==item))
-                        if item == lastEquippedItem then
-                            -- 使用找到的物品
-                            Player._lastEquippedItemCount = 1
-                            inventory:UseItemFromInvTile(lastEquippedItem)
-                            Player._lastEquippedItem = currentEquipped
-                            return
-                        end
-                        if item.name == lastEquippedItem.name then
-                            notSourceItem = item
-                        end
-                    end
-                end
+            local notSourceItem, swapSuccess = SwapWeaponEquippedItem(Player, inventory, currentEquipped, lastEquippedItem)
+            if not swapSuccess then
+                return
             end
 
             -- 如果在主物品栏中没有找到，则检查body容器中的物品
             local overflowContainer = inventory:GetOverflowContainer()
-            printString(overflowContainer:GetItems(), "__overflowContainer_______3", 1)
-
-            if overflowContainer ~= nil then
-                local overflowItems =overflowContainer:GetItems()
-                if overflowItems ~= nil then
-                    for index, item in pairs(overflowItems) do
-                        if item ~= nil then
-                            print("index="..index.."|item.name"..item.name.."|lastEquippedItem.name"..lastEquippedItem.name.."lastEquippedItem==item="..tostring(lastEquippedItem==item))
-                            if item == lastEquippedItem then
-                                -- 使用找到的物品
-                                Player._lastEquippedItemCount = 1
-                                inventory:UseItemFromInvTile(lastEquippedItem)
-                                Player._lastEquippedItem = currentEquipped
-                                return
-                            end
-                            if item.name == lastEquippedItem.name then
-                                notSourceItem = item
-                            end
-                        end
-                    end
-                end
+            local notSourceItemContainer, swapSuccessContainer = SwapWeaponEquippedItem(Player, overflowContainer, currentEquipped, lastEquippedItem)
+            if swapSuccessContainer then
+                return
             end
+
+            if notSourceItem == nil then
+                notSourceItem = notSourceItemContainer
+            end
+
             if notSourceItem ~= nil then
                 inventory:UseItemFromInvTile(notSourceItem)
                 Player._lastEquippedItem = currentEquipped
@@ -345,4 +294,117 @@ function SwapToLastEquippedItem(moreEable)
             Player._lastEquippedItem = currentEquipped
         end
     end
+end
+
+
+if IsModEnable(modname) then
+    local useHotkeyEable = GetModConfigData("useHotkeyEable")
+    if useHotkeyEable == 0 then
+        return
+    end
+    local useLastHotkey = GetModConfigData("useLastHotkey")
+    local moreEable = GetModConfigData("moreEable")
+
+    local axeHotkey_1 = GetModConfigData("axeHotkey_1")
+    local axeHotkey_2 = GetModConfigData("axeHotkey_2")
+
+    local mattockHotkey_1 = GetModConfigData("mattockHotkey_1")
+    local mattockHotkey_2 = GetModConfigData("mattockHotkey_2")
+
+    local shovelHotkey_1 = GetModConfigData("shovelHotkey_1")
+    local shovelHotkey_2 = GetModConfigData("shovelHotkey_2")
+
+    local hammerHotkey_1 = GetModConfigData("hammerHotkey_1")
+    local hammerHotkey_2 = GetModConfigData("hammerHotkey_2")
+    --[[斧子 (Axe) 稿子  铲子 (Shovel) 锤子--]]
+
+    local function addValue(includeArray, value)
+        if value ~= nil and value ~= defaultValue then
+            includeArray[#includeArray + 1] = value
+        end
+    end
+
+    local includeArray = {}
+    addValue(includeArray, useLastHotkey)
+    addValue(includeArray, axeHotkey_1)
+    addValue(includeArray, axeHotkey_2)
+    addValue(includeArray, mattockHotkey_1)
+    addValue(includeArray, mattockHotkey_2)
+    addValue(includeArray, shovelHotkey_1)
+    addValue(includeArray, shovelHotkey_2)
+    addValue(includeArray, hammerHotkey_1)
+    addValue(includeArray, hammerHotkey_2)
+
+
+    local keyStates = {}
+    keyStates[defaultValue] = true
+
+    local function isOtherValid(key)
+        for _, value in pairs(includeArray) do
+            if value ~= nill and key ~= nill and key ~= defaultValue and value ~= key and keyStates[value] then
+                return true
+            end
+        end
+        return false
+    end
+
+    -- 添加监听事件
+    local function AddInputHandler(handler)
+        GLOBAL.TheInput:AddKeyDownHandler(function(key, down)
+            handler(key, down, "keyboard")
+        end)
+
+        GLOBAL.TheInput:AddMouseButtonHandler(function(key, down)
+            handler(key, down, "mouse")
+        end)
+    end
+
+    AddInputHandler(function(key, down, inputType)
+        printString(inputType .. " key: " .. key .. " down: " .. tostring(down), "handler_")
+        if includeArray[key] == nil then
+            return
+        end
+        -- 记录组合键
+        keyStates[key] = down
+        printString(keyStates, "keyStates_")
+        if down then
+            if not isOtherValid(useLastHotkey) and keyStates[useLastHotkey] then
+                --SendModRPCToServer(MOD_RPC["Last Use Item"]["RPCSetLastItem"])
+                SwapToLastEquippedItem(moreEable)
+            elseif isOtherValid(useLastHotkey) and keyStates[axeHotkey_1] then
+                OneClickHeal()
+            elseif keyStates[axeHotkey_1] and keyStates[axeHotkey_2] then
+                SwapToolsEquippedItem(ACTIONS.CHOP.id.."_tool")
+            elseif keyStates[mattockHotkey_1] and keyStates[mattockHotkey_2] then
+                SwapToolsEquippedItem(ACTIONS.MINE.id.."_tool")
+            elseif keyStates[shovelHotkey_1] and keyStates[shovelHotkey_2] then
+                SwapToolsEquippedItem(ACTIONS.DIG.id.."_tool")
+            elseif keyStates[hammerHotkey_1] and keyStates[hammerHotkey_2] then
+                SwapToolsEquippedItem(ACTIONS.HAMMER.id.."_tool")
+            end
+        end
+    end)
+
+    local function OnEquip(inst, equipInst)
+        printString(equipInst, "OnEquip_equipInst_")
+        if equipInst and equipInst.prefab then
+            inst._lastEquippedItem = equipInst
+            return
+        end
+    end
+
+    AddPlayerPostInit(function(inst)
+        printString("添加事件" .. tostring(GLOBAL.TheWorld.ismastersim))
+        -- 确保监听器只添加一次
+        if not inst.onequip_swap_listener_added then
+            inst:ListenForEvent("equip", OnEquip)
+            inst.onequip_swap_listener_added = true
+        end
+    end)
+
+    local function RPCSetLastItem(player)
+        printString(player, "收到客户端的请求。。。。。。")
+    end
+
+    AddModRPCHandler(modname, "RPCSetLastItem", RPCSetLastItem)
 end
