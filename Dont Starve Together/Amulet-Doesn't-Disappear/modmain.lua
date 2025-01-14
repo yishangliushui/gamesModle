@@ -74,7 +74,7 @@ local function printString(data, str, count)
             local temp = {}
             for i, k in pairs(data) do
                 if type(i) == "number" then
-                    table.insert(temp, string.format("%s%s", indent .. "  ", buildString(k, count + 1, indent .. "  ")))
+                    table.insert(temp, string.format("%s%s=%s", indent .. "  ", tostring(i), buildString(k, count + 1, indent .. "  ")))
                 else
                     table.insert(temp, string.format("%s%s=%s", indent .. "  ", tostring(i), buildString(k, count + 1, indent .. "  ")))
                 end
@@ -118,36 +118,6 @@ function IsModEnable(name)
     return modIndex[name] ~= nil or enablemods[name] ~= nil
 end
 
-local function turnoff_yellow(inst)
-    if inst._light ~= nil then
-        if inst._light:IsValid() then
-            inst._light:Remove()
-        end
-        inst._light = nil
-    end
-end
-
-local function onunequip_yellow(inst, owner)
-    if owner.components.bloomer ~= nil then
-        owner.components.bloomer:PopBloom(inst)
-    else
-        owner.AnimState:ClearBloomEffectHandle()
-    end
-
-    owner.AnimState:ClearOverrideSymbol("swap_body")
-
-    local skin_build = inst:GetSkinBuild()
-    if skin_build ~= nil then
-        owner:PushEvent("unequipskinneditem", inst:GetSkinName())
-    end
-
-    if inst.components.fueled ~= nil then
-        inst.components.fueled:StopConsuming()
-    end
-
-    turnoff_yellow(inst)
-end
-
 if IsModEnable(modname) then
     local useHotkeyEable = GetModConfigData("useHotkeyEable", modname)
     local useDays = GetModConfigData("useDays", modname)
@@ -157,6 +127,18 @@ if IsModEnable(modname) then
     end
 
     TUNING.YELLOWAMULET_FUEL = useDays * TUNING.YELLOWAMULET_FUEL
+
+    local function talkerSayString(player, text, continueTime)
+        printString(player, "收到客户端的请求。。。。。。" .. text .. "_" .. continueTime)
+        if continueTime ~= nil then
+            continueTime = 3
+        end
+        if player.components ~= nil and player.components.talker ~= nil then
+            player.components.talker:Say(text, continueTime)
+        end
+    end
+
+    AddModRPCHandler(modname, "talkerSayString", talkerSayString)
 
     --AddPrefabPostInit("yellowamulet", function(inst)
     --    printString("初始化yellowamulet")

@@ -21,7 +21,6 @@ all_clients_require_mod = false
 -- 饥荒api版本，固定填10
 api_version = 10
 
-
 local default = 99999
 
 -- 获取鼠标键位和常用键盘按键
@@ -29,8 +28,8 @@ local function getAllKeys()
     return {
         { description = "MOUSE_X1", data = 1005, hover = "侧键1" },
         { description = "MOUSE_X2", data = 1006, hover = "侧键2" },
-        { description = "LEFT_CTRL", data = 401, hover = "左Ctrl" },
-        { description = "LEFT_SHIFT", data = 402, hover = "左Shift" },
+        { description = "LEFT_CTRL", data = 306, hover = "左Ctrl" },
+        { description = "LEFT_SHIFT", data = 304, hover = "左Shift" },
         { description = "关闭", data = default, hover = "关闭" }
     }
 end
@@ -65,7 +64,6 @@ configuration_options = {
     }
 }
 
-
 AddButton("useLastHotkey", "手持使用上一个物品快捷键", default)
 AddButton("axeHotkey_1", "斧子组合键1", default)
 AddButton("axeHotkey_2", "斧子组合键2", default)
@@ -75,3 +73,6 @@ AddButton("shovelHotkey_1", "铲子组合键1", default)
 AddButton("shovelHotkey_2", "铲子组合键2", default)
 AddButton("hammerHotkey_1", "锤子组合键1", default)
 AddButton("hammerHotkey_2", "锤子组合键2", default)
+AddButton("amuletHotkey_1", "护符组合键2", default)
+AddButton("amuletHotkey_2", "护符组合键2", default)
+

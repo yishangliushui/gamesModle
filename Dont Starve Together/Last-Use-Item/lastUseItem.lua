@@ -4,3 +4,5 @@ MESSAGE_STRING = {
     notAngryItem = "再这样我可就生气了",
     notAngryIng = "生气中..."
 }
+
+return MESSAGE_STRING
