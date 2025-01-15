@@ -61,7 +61,8 @@ local serverModname = "Amulet-Doesn't-Disappear"
 
 local defaultValue = 99999
 
-local amuletNeck = { "amulet", "blueamulet", "purpleamulet", "orangeamulet", "greenamulet", "yellowamulet" }
+--local amuletNeck = { "amulet", "blueamulet", "purpleamulet", "orangeamulet", "greenamulet", "yellowamulet" }
+local lightTable = {"torch", "lantern", "minerhat", "morningstar", "yellowamulet"}
 
 local function printString(data, str, count)
     -- 初始化默认值
@@ -147,6 +148,9 @@ if IsModEnable(modname) then
     local amuletHotkey_1 = GetModConfigData("amuletHotkey_1")
     local amuletHotkey_2 = GetModConfigData("amuletHotkey_2")
 
+    local lightHotkey_1 = GetModConfigData("lightHotkey_1")
+    local lightHotkey_2 = GetModConfigData("lightHotkey_2")
+
     local function addValue(includeArray, value)
         if value ~= nil and value ~= defaultValue then
             includeArray[value] = value
@@ -202,7 +206,7 @@ if IsModEnable(modname) then
                     printString("index=" .. index .. "|item.name" .. item.name, "SwapToolEquippedItem_" .. toolName)
                     if item:HasTag(toolName) then
                         player.replica.inventory:UseItemFromInvTile(item)
-                        player._lastEquippedItem = currentEquipped
+                        --player._lastEquippedItem = currentEquipped
                         return true
                     end
                 end
@@ -246,15 +250,11 @@ if IsModEnable(modname) then
         if Player == nil or Player.replica == nil or Player.replica.inventory == nil then
             return
         end
-        local inventory = Player.replica.inventory
-        -- 获取当前手持物品
-        if inventory ~= nil and inventory:IsVisible() then
-            local currentEquipped = inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
-            if SwapToolEquippedItem(Player, inventory, currentEquipped, toolName) then
-                return
-            end
-            local overflowContainer = inventory:GetOverflowContainer()
-            SwapToolEquippedItem(Player, overflowContainer, currentEquipped, toolName)
+        local overflowContainer = Player.replica.inventory:GetOverflowContainer()
+        local currentEquipped = Player.replica.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
+        -- 遍历库存和背包（如果存在），寻找指定的物品预设
+        for _, item in pairs(Player.replica.inventory and {overflowContainer, Player.replica.inventory} or {overflowContainer}) do
+            SwapToolEquippedItem(Player, item, currentEquipped, toolName)
         end
     end
 
@@ -278,21 +278,16 @@ if IsModEnable(modname) then
                 lastEquippedItem = Player._lastAmuletEquippedItem
             end
             if lastEquippedItem ~= nil then
-                -- 假设 lastEquippedItem 是物品的唯一标识符（如物品名或ID）
-                local notSourceItem, swapSuccess = SwapWeaponEquippedItem(Player, inventory, currentEquipped, lastEquippedItem)
-                if swapSuccess then
-                    return
-                end
-
-                -- 如果在主物品栏中没有找到，则检查body容器中的物品
+                local notSourceItem
                 local overflowContainer = inventory:GetOverflowContainer()
-                local notSourceItemContainer, swapSuccessContainer = SwapWeaponEquippedItem(Player, overflowContainer, currentEquipped, lastEquippedItem)
-                if swapSuccessContainer then
-                    return
-                end
-
-                if notSourceItem == nil then
-                    notSourceItem = notSourceItemContainer
+                for _, item in pairs(Player.replica.inventory and {overflowContainer, Player.replica.inventory} or {overflowContainer}) do
+                    local notSourceItemContainer, swapSuccess = SwapWeaponEquippedItem(Player, item, currentEquipped, lastEquippedItem)
+                    if swapSuccess then
+                        return
+                    end
+                    if notSourceItem == nil then
+                        notSourceItem = notSourceItemContainer
+                    end
                 end
 
                 if notSourceItem ~= nil then
@@ -356,6 +351,7 @@ if IsModEnable(modname) then
                         end
                     end
                 end
+
                 --local hot_key_num = 1
                 --local item = inventory:GetItemInSlot(hot_key_num)
                 --if item ~= nil then
@@ -377,6 +373,34 @@ if IsModEnable(modname) then
 
     local function SwapToLastEquippedItem()
         SwapHandsOrNeckEquippedItem(EQUIPSLOTS.HANDS)
+    end
+
+    local function SwapLightEquippedItem(toolName)
+        local Player = GLOBAL.ThePlayer
+        if Player == nil or Player.replica == nil or Player.replica.inventory == nil then
+            return
+        end
+        local overflowContainer = Player.replica.inventory:GetOverflowContainer()
+        local currentEquipped = Player.replica.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
+        -- 遍历库存和背包（如果存在），寻找指定的物品预设
+        for _, equippedItem in pairs(Player.replica.inventory and {overflowContainer, Player.replica.inventory} or {overflowContainer}) do
+            if equippedItem ~= nil then
+                local Items = equippedItem:GetItems()
+                if Items == nil then
+                    return false
+                end
+                for index, item in pairs(Items) do
+                    if item ~= nil then
+                        printString("index=" .. index .. "|item.name" .. item.name, "SwapToolEquippedItem_" .. toolName)
+                        if lightTable[item.prefab] ~= nil then
+                            player.replica.inventory:UseItemFromInvTile(item)
+                            --player._lastEquippedItem = currentEquipped
+                            return true
+                        end
+                    end
+                end
+            end
+        end
     end
 
     local function isOtherValid(key)
@@ -423,6 +447,8 @@ if IsModEnable(modname) then
                 SwapToolsEquippedItem(ACTIONS.HAMMER.id .. "_tool")
             elseif keyStates[amuletHotkey_1] and keyStates[amuletHotkey_2] then
                 SwapAmuletsEquippedItem()
+            elseif keyStates[lightHotkey_1] and keyStates[lightHotkey_2] then
+                SwapLightEquippedItem()
             end
         end
     end)
@@ -430,12 +456,14 @@ if IsModEnable(modname) then
     local function OnEquip(inst, equipInst)
         if equipInst and equipInst.prefab then
             printString(equipInst, "OnEquip", 1)
-            --if equipInst.prefab == "amulet" then
-            --    inst._lastAmuletEquippedItem = equipInst
+            if equipInst.prefab == "amulet" then
+                inst._lastAmuletEquippedItem = equipInst
+            elseif equipInst:HasTag("weapon") then
+                inst._lastEquippedItem = equipInst
             --elseif  equipInst.equipslot == EQUIPSLOTS.HANDS then
             --    inst._lastEquippedItem = equipInst
             --end
-            return
+            end
         end
     end
 

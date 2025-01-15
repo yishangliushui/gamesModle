@@ -61,6 +61,20 @@ configuration_options = {
                         data = 1
                     } },
         default = 0                   -- 默认值，与可选项里的值匹配作为默认值
+    },
+    {
+        name = "moreEable", -- 配置项名换，在modmain.lua里获取配置值时要用到
+        hover = "更多对话", -- 鼠标移到配置项上时所显示的信息
+        options = { {                    -- 配置项目可选项
+                        description = "关闭", -- 可选项上显示的内容
+                        hover = "关闭", -- 鼠标移动到可选项上显示的信息
+                        data = 0
+                    }, {
+                        description = "开启", -- 可选项上显示的内容
+                        hover = "开启", -- 鼠标移动到可选项上显示的信息
+                        data = 1
+                    } },
+        default = 1                   -- 默认值，与可选项里的值匹配作为默认值
     }
 }
 
@@ -75,4 +89,5 @@ AddButton("hammerHotkey_1", "锤子组合键1", default)
 AddButton("hammerHotkey_2", "锤子组合键2", default)
 AddButton("amuletHotkey_1", "护符组合键2", default)
 AddButton("amuletHotkey_2", "护符组合键2", default)
-
+AddButton("lightHotkey_1", "获取发光物品组合键1", default)
+AddButton("lightHotkey_2", "获取发光物品组合键2", default)
