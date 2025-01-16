@@ -58,7 +58,31 @@ local KnownModIndex = GLOBAL.KnownModIndex
 
 local modname = "Amulet-Doesn't-Disappear"
 
-local function printString(data, str, count)
+local uuidMap={'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'}
+local separator = {8,4,4,4,12}
+--math.randomseed(tostring(os.clock()):sub(3,8):reverse() .. os.time())
+
+local function genUUID()
+    local id = "_"
+    for i,sepNum in ipairs(separator) do
+        for j=1,sepNum do
+            id = id .. (uuidMap[math.random(1,16)])
+        end
+        if i < #separator then id = id .."-" end
+    end
+    return id
+end
+
+local debugBoolean = true
+local timeFormat = "%Y-%m-%d %H:%M:%S"
+
+local function printStringDebug(data, str, uuid, debug, count)
+    if debug == nil or not debug then
+        return
+    end
+    if data == nil then
+        return string.format("[%s][%s][%s]...data=%s", os.date(timeFormat), str, uuid, "")
+    end
     -- 初始化默认值
     if count == nil then
         count = 5
@@ -67,6 +91,10 @@ local function printString(data, str, count)
         str = ""
     end
 
+    if uuid == nil then
+        uuid = ""
+    end
+    uuid = tostring(uuid)
     -- 构建字符串的辅助函数
     local function buildString(data, count, indent)
         indent = indent or ""
@@ -88,10 +116,14 @@ local function printString(data, str, count)
     end
 
     -- 构建最终的输出字符串
-    local output = string.format("[%s][%s]...data=%s", "", str, buildString(data, count, ""))
+    local output = string.format("[%s][%s][%s]...data=%s", os.date(timeFormat), str, uuid, buildString(data, count, ""))
 
     -- 打印输出
     print(output)
+end
+
+local function printString(data, str, uuid, count)
+    return printStringDebug(data, str, uuid, debugBoolean, count)
 end
 
 -- 获取是客服端还是服务端
@@ -129,7 +161,7 @@ if IsModEnable(modname) then
     TUNING.YELLOWAMULET_FUEL = useDays * TUNING.YELLOWAMULET_FUEL
 
     local function talkerSayString(player, text, continueTime)
-        printString(player, "收到客户端的请求。。。。。。" .. text .. "_" .. continueTime)
+        printString(player, "2收到客户端的请求。。。。。。" .. text .. "_" .. continueTime)
         if continueTime ~= nil then
             continueTime = 3
         end
@@ -139,16 +171,5 @@ if IsModEnable(modname) then
     end
 
     AddModRPCHandler(modname, "talkerSayString", talkerSayString)
-
-    --AddPrefabPostInit("yellowamulet", function(inst)
-    --    printString("初始化yellowamulet")
-    --    if not IsServer then
-    --        return
-    --    end
-    --    if inst.components.fueled ~= nil then
-    --        inst.components.fueled:SetDepletedFn(onunequip_yellow)
-    --    end
-    --end)
-
 end
 
