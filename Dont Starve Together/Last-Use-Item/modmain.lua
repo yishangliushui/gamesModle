@@ -302,9 +302,12 @@ if IsModEnable(modname) then
             end
             local overflowContainer = Player.replica.inventory:GetOverflowContainer()
             local currentEquipped = Player.replica.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
-            -- 遍历库存和背包（如果存在），寻找指定的物品预设
+            -- 遍历库存和背包（如果存在），寻找指定的物品，记录上一次使用的物品
             for _, item in pairs(Player.replica.inventory and {overflowContainer, Player.replica.inventory} or {overflowContainer}) do
-                SwapToolEquippedItem(Player, item, currentEquipped, toolName)
+                local swapSuccess = SwapToolEquippedItem(Player, item, currentEquipped, toolName)
+                if swapSuccess then
+                    return
+                end
             end
         end
 
