@@ -324,7 +324,8 @@ if IsModEnable(modname) then
                     currentEquipped = inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
                     lastEquippedItem = Player._lastEquippedItem
                 else
-                    currentEquipped = player.replica.inventory:GetEquippedItem(equipType)
+                    currentEquipped = inventory:GetEquippedItem(equipType)
+                    printString("lastEquippedItem.prefab=" .. tostring(lastEquippedItem.prefab), "SwapHandsOrNeckEquippedItem", uuid, 1)
                     if currentEquipped == nil or currentEquipped.prefab ~= "amulet" then
                         currentEquipped = nil
                     end
