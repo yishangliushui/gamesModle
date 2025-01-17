@@ -502,16 +502,16 @@ if IsModEnable(modname) then
     end)
 
     local function OnEquip(inst, equipInst)
-        --if equipInst and equipInst.prefab then
-        --    printString(equipInst, "OnEquip_OnEquip")
-        --    if equipInst.prefab == "amulet" then
-        --        inst._lastAmuletEquippedItem = equipInst
-        --    elseif equipInst:HasTag("weapon") then
-        --        inst._lastEquippedItem = equipInst
-        --    elseif equipInst.equipslot == EQUIPSLOTS.HANDS then
-        --        inst._lastEquippedItem = equipInst
-        --    end
-        --end
+        if equipInst and equipInst.prefab then
+            printString(equipInst, "OnEquip_OnEquip", "",3)
+            if equipInst.prefab == "amulet" then
+                inst._lastAmuletEquippedItem = equipInst
+            elseif equipInst:HasTag("weapon") then
+                inst._lastEquippedItem = equipInst
+            elseif equipInst.equipslot == EQUIPSLOTS.HANDS then
+                inst._lastEquippedItem = equipInst
+            end
+        end
     end
 
     AddPlayerPostInit(function(inst)

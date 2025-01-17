@@ -26,11 +26,17 @@ local default = 99999
 -- 获取鼠标键位和常用键盘按键
 local function getAllKeys()
     return {
-        { description = "MOUSE_X1", data = 1005, hover = "侧键1" },
-        { description = "MOUSE_X2", data = 1006, hover = "侧键2" },
+        { description = "MOUSE_X1", data = 1005, hover = "侧键下" },
+        { description = "MOUSE_X2", data = 1006, hover = "侧键上" },
+        { description = "MOUSE_SCROLLUP", data = 1003, hover = "滚轮上" },
+        { description = "MOUSE_SCROLLDOWN", data = 1004, hover = "滚轮下" },
         { description = "LEFT_CTRL", data = 306, hover = "左Ctrl" },
         { description = "LEFT_SHIFT", data = 304, hover = "左Shift" },
-        { description = "关闭", data = default, hover = "关闭" }
+        { description = "KEY_LALT", data = 308, hover = "左ALT" },
+        { description = "KEY_C", data = 99, hover = "C" },
+        { description = "KEY_V", data = 118, hover = "V" },
+        { description = "KEY_X", data = 120, hover = "X" },
+        { description = "关闭", data = default, hover = "关闭" },
     }
 end
 
@@ -87,7 +93,7 @@ AddButton("shovelHotkey_1", "铲子组合键1", default)
 AddButton("shovelHotkey_2", "铲子组合键2", default)
 AddButton("hammerHotkey_1", "锤子组合键1", default)
 AddButton("hammerHotkey_2", "锤子组合键2", default)
-AddButton("amuletHotkey_1", "护符组合键2", default)
+AddButton("amuletHotkey_1", "护符组合键1", default)
 AddButton("amuletHotkey_2", "护符组合键2", default)
 AddButton("lightHotkey_1", "获取发光物品组合键1", default)
 AddButton("lightHotkey_2", "获取发光物品组合键2", default)
