@@ -124,6 +124,8 @@ if IsModEnable(modname) then
     local lightHotkey_1 = GetModConfigData("lightHotkey_1")
     local lightHotkey_2 = GetModConfigData("lightHotkey_2")
 
+    local saveHotkey = GetModConfigData("saveHotkey")
+
     local function addValue(includeArray, value)
         if value ~= nil and value ~= defaultValue then
             includeArray[value] = value
@@ -433,6 +435,8 @@ if IsModEnable(modname) then
                 SwapAmuletsEquippedItem()
             elseif keyStates[lightHotkey_1] and keyStates[lightHotkey_2] then
                 SwapLightEquippedItem()
+            elseif not isOtherValid(useLastHotkey) and keyStates[saveHotkey] then
+                SendModRPCToServer(GLOBAL.MOD_RPC[modname]["saveLocal"])
             end
         end
     end)
@@ -466,8 +470,6 @@ if IsModEnable(modname) then
         printString(player, "收到客户端的请求。。。。。。")
     end
 
-    AddModRPCHandler(modname, "RPCSetLastItem", RPCSetLastItem)
-
     local function talkerSayString(player, text, continueTime)
         printString(player, "1收到客户端的请求。。。。。。" .. text .. "_" .. continueTime)
         if continueTime ~= nil then
@@ -478,5 +480,8 @@ if IsModEnable(modname) then
         end
     end
 
+    AddModRPCHandler(modname, "RPCSetLastItem", RPCSetLastItem)
     AddModRPCHandler(serverModname, "talkerSayString", talkerSayString)
+    AddModRPCHandler(modname, "saveLocal", function() SaveGameIndex:SaveCurrent() end)
+
 end
