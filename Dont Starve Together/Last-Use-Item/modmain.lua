@@ -57,7 +57,7 @@ local ActionHandler = GLOBAL.ActionHandler
 local KnownModIndex = GLOBAL.KnownModIndex
 local MOD_RPC = GLOBAL.MOD_RPC
 local MESSAGE_STRING = require "lastUseItem"
-local os = GLOBAL.os
+local utils = require "utils"
 
 local modname = "Last Use Item"
 local serverModname = "Amulet-Doesn't-Disappear"
@@ -67,72 +67,10 @@ local defaultValue = 99999
 --local amuletNeck = { "amulet", "blueamulet", "purpleamulet", "orangeamulet", "greenamulet", "yellowamulet" }
 local lightTable = {"torch", "lantern", "minerhat", "morningstar", "yellowamulet"}
 
-local uuidMap={'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'}
-local separator = {8,4,4,4,12}
- --math.randomseed(tostring(os.clock()):sub(3,8):reverse() .. os.time())
-
-local function genUUID()
-    local id = "_"
-    for i,sepNum in ipairs(separator) do
-        for j=1,sepNum do
-            id = id .. (uuidMap[math.random(1,16)])
-        end
-        if i < #separator then id = id .."-" end
-    end
-    return id
-end
-
 local debugBoolean = true
-local timeFormat = "%Y-%m-%d %H:%M:%S"
-
-local function printStringDebug(data, str, uuid, debug, count)
-    if debug == nil or not debug then
-        return
-    end
-    if data == nil then
-        return string.format("[%s][%s][%s]...data=%s", os.date(timeFormat), str, uuid, "")
-    end
-    -- 初始化默认值
-    if count == nil then
-        count = 5
-    end
-    if str == nil then
-        str = ""
-    end
-
-    if uuid == nil then
-        uuid = ""
-    end
-    uuid = tostring(uuid)
-    -- 构建字符串的辅助函数
-    local function buildString(data, count, indent)
-        indent = indent or ""
-        if type(data) == "table" and count < 6 then
-            local temp = {}
-            for i, k in pairs(data) do
-                if type(i) == "number" then
-                    table.insert(temp, string.format("%s%s=%s", indent .. "  ", tostring(i), buildString(k, count + 1, indent .. "  ")))
-                else
-                    table.insert(temp, string.format("%s%s=%s", indent .. "  ", tostring(i), buildString(k, count + 1, indent .. "  ")))
-                end
-            end
-            return "{\n" .. table.concat(temp, ",\n") .. "\n" .. indent .. "}"
-        elseif type(data) == "function" then
-            return tostring(data)
-        else
-            return tostring(data)
-        end
-    end
-
-    -- 构建最终的输出字符串
-    local output = string.format("[%s][%s][%s]...data=%s", os.date(timeFormat), str, uuid, buildString(data, count, ""))
-
-    -- 打印输出
-    print(output)
-end
 
 local function printString(data, str, uuid, count)
-    return printStringDebug(data, str, uuid, debugBoolean, count)
+    return utils.printStringDebug(data, str, uuid, debugBoolean, count)
 end
 
 -- 获取是客服端还是服务端
@@ -209,7 +147,6 @@ if IsModEnable(modname) then
 
     -- 添加监听事件
     local function AddInputHandler(handler)
-
         GLOBAL.TheInput:AddKeyHandler(function(key, down)
             handler(key, down, "keyboard")
         end)
@@ -220,9 +157,7 @@ if IsModEnable(modname) then
     end
 
     AddInputHandler(function(key, down, inputType)
-
-        local uuid = genUUID()
-
+        local uuid = utils.genUUID()
         local function OneClickHeal()
             local Player = GLOBAL.ThePlayer
             if Player == nil or Player.replica == nil or Player.replica.inventory == nil then
@@ -445,8 +380,8 @@ if IsModEnable(modname) then
                     end
                     for index, item in pairs(Items) do
                         if item ~= nil then
-                            printString("index=" .. index .. "|item.name" .. item.name, "SwapToolEquippedItem_" .. toolName, uuid)
-                            if lightTable[item.prefab] ~= nil then
+                            printString("index=" .. index .. "|item.name=" .. item.name .. "|item.prefab=" .. item.prefab, "SwapToolEquippedItem_" .. toolName, uuid)
+                            if utils.isContainValue(lightTable, item.prefab) then
                                 player.replica.inventory:UseItemFromInvTile(item)
                                 --player._lastEquippedItem = currentEquipped
                                 return true
