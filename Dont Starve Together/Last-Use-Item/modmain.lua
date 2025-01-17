@@ -64,7 +64,7 @@ local serverModname = "Amulet-Doesn't-Disappear"
 
 local defaultValue = 99999
 
---local amuletNeck = { "amulet", "blueamulet", "purpleamulet", "orangeamulet", "greenamulet", "yellowamulet" }
+local amuletNeck = { "amulet", "blueamulet", "purpleamulet", "orangeamulet", "greenamulet", "yellowamulet" }
 local lightTable = {"torch", "lantern", "minerhat", "morningstar", "yellowamulet"}
 
 local debugBoolean = true
@@ -438,8 +438,10 @@ if IsModEnable(modname) then
     end)
 
     local function OnEquip(inst, equipInst)
+        local uuid = utils.genUUID()
         if equipInst and equipInst.prefab then
-            printString(equipInst, "OnEquip_OnEquip", "",3)
+            printString(equipInst, "OnEquip", uuid,3)
+            printString(equipInst.prefab, "equipInst.prefab", uuid,3)
             if equipInst.prefab == "amulet" then
                 inst._lastAmuletEquippedItem = equipInst
             elseif equipInst:HasTag("weapon") then
