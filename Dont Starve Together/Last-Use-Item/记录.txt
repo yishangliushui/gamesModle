@@ -60,3 +60,21 @@
 --下行代码只代表查值时自动查global，增加global的变量或者修改global的变量时还是需要带"GLOBAL."
 GLOBAL.setmetatable(env, { __index = function(t, k) return GLOBAL.rawget(GLOBAL, k) end })
 local _G = GLOBAL
+
+
+
+
+
+
+御坂十七号-正版清纯美少女
+(1)这个qq群里的群文件
+(2)龙飞的饥荒mod教程链接:
+https://zhuanlan.zhihu.com/p/570258953
+(3)官方论坛的教程提供网页链接:forums.kleientertainment.com/profile/350174-rezecib/
+(4)勿言的视频教程:https://space.bilibili.com/23698445?from=search&seid=6644108394665516184
+https://isnullptr.cn
+(5)其余教程:
+https://www.zhihu.com/people/xingxing_2014/posts
+https://atjiu.github.io/dstmod-tutorial/#/
+https://www.dstmod.com/component/
+https://n77a3mjegs.feishu.cn/docx/K9bUdpb5Qo85j2xo8XkcOsU1nuh?from=from_copylink

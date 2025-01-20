@@ -1,3 +1,7 @@
+GLOBAL.setmetatable(env, { __index = function(t, k)
+    return GLOBAL.rawget(GLOBAL, k)
+end })
+
 -- 首先，在文件的头部写上需要加载的Widget类
 local Widget = require "widgets/widget" --Widget，所有widget的祖先类
 local Text = require "widgets/text" --Text类，文本处理
