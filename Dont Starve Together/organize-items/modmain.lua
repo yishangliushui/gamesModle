@@ -56,42 +56,16 @@ local ActionHandler = GLOBAL.ActionHandler
 -- 已知模组索引，用于管理加载的模组信息
 local KnownModIndex = GLOBAL.KnownModIndex
 
+local utils = require("utils")
+
 local modname = "organize-items"
 
-local function printString(data, str, count)
-    -- 初始化默认值
-    if count == nil then
-        count = 5
-    end
-    if str == nil then
-        str = ""
-    end
+local debugBoolean = true
 
-    -- 构建字符串的辅助函数
-    local function buildString(data, count, indent)
-        indent = indent or ""
-        if type(data) == "table" and count < 6 then
-            local temp = {}
-            for i, k in pairs(data) do
-                if type(i) == "number" then
-                    table.insert(temp, string.format("%s%s=%s", indent .. "  ", tostring(i), buildString(k, count + 1, indent .. "  ")))
-                else
-                    table.insert(temp, string.format("%s%s=%s", indent .. "  ", tostring(i), buildString(k, count + 1, indent .. "  ")))
-                end
-            end
-            return "{\n" .. table.concat(temp, ",\n") .. "\n" .. indent .. "}"
-        elseif type(data) == "function" then
-            return tostring(data)
-        else
-            return tostring(data)
-        end
-    end
+local locked_items = {}
 
-    -- 构建最终的输出字符串
-    local output = string.format("[%s][%s]...data=%s", "", str, buildString(data, count, ""))
-
-    -- 打印输出
-    print(output)
+local function printString(data, str, uuid, count)
+    return utils.printStringDebug(data, str, uuid, debugBoolean, count)
 end
 
 -- 获取是客服端还是服务端
@@ -125,79 +99,160 @@ if IsModEnable(modname) then
         return
     end
 
-    local function CanStoreInChest(item, chest)
-        -- 简单的分类逻辑，可以根据实际需求扩展
-        local chest_inventory = chest.components.inventory
-        if chest_inventory:CanAcceptItem(item) then
-            return true
-        end
-        return false
-    end
+    local function MoveItemToContainer(player, item, chest)
+        local inventory = player.components.inventory
+        local startPos = Vector3(player.Transform:GetWorldPosition())
+        local endPos = Vector3(chest.Transform:GetWorldPosition())
 
-    local function FindSuitableChest(item, chests)
-        for _, chest in ipairs(chests) do
-            if CanStoreInChest(item, chest) then
-                return chest
+        -- 计算方向
+        local direction = (endPos - startPos):GetNormalized()
+        local distance = (endPos - startPos):Length()
+
+        -- 设置速度
+        local speed = 5  -- 每秒移动的距离
+        local duration = distance / speed
+        local timeElapsed = 0
+
+        -- 创建一个新的实体来表示移动的物品
+        local movingItem = item:Clone()
+        movingItem.Transform:SetPosition(startPos:Get())
+        movingItem:AddTag("moving_item")
+
+        --inventory:DropItem(item)
+
+        -- 将物品从物品栏移除
+        inventory:RemoveItem(item)
+
+        -- 更新函数
+        local function Update(dt)
+            timeElapsed = timeElapsed + dt
+            if timeElapsed >= duration then
+                -- 到达目的地
+                if chest.components.container:GiveItem(movingItem, nil, player:GetPosition()) then
+                    -- 打开容器
+                    if chest.components.containeropener then
+                        chest.components.containeropener:Open()
+                    end
+                else
+                    -- 如果放置失败，将物品放回玩家物品栏
+                    inventory:GiveItem(movingItem, nil, player:GetPosition())
+                end
+                movingItem:Remove()
+                return
             end
+
+            -- 更新位置
+            local t = timeElapsed / duration
+            local newPos = startPos * (1 - t) + endPos * t
+            movingItem.Transform:SetPosition(newPos:Get())
+
+            -- 更新朝向
+            movingItem.Transform:SetRotation(direction:GetAngle() + 90)
         end
-        return nil
+
+        -- 注册更新函数
+        movingItem:DoPeriodicTask(0.1, Update, nil, true)
     end
 
-    local function MoveItemToChest(item, chest)
-        local player = GetPlayer()
+    local function SortInventoryToNearbyChests(player, uuid)
         local inventory = player.components.inventory
-        inventory:GiveItem(item, nil, chest:GetPosition())
-    end
-
-    local function SortInventoryToNearbyChests(player)
-        local inventory = player.components.inventory
-        local nearby_entities = TheSim:FindEntities(player:GetPosition(), 10, {"chest"}) -- 查找附近10格内的箱子
-
+        local pos = player:GetPosition()
+        local nearby_entities = TheSim:FindEntities(pos.x, pos.y, pos.z, 5, { "chest" })
         if not nearby_entities or #nearby_entities == 0 then
-            print("没有找到附近的箱子")
+            printString("没有找到附近的箱子", "", uuid)
             return
         end
-
-        for i, item in ipairs(inventory.itemslots) do
-            if item then
-                local chest = FindSuitableChest(item, nearby_entities)
-                if chest then
-                    MoveItemToChest(item, chest)
-                else
-                    print("没有合适的箱子存放物品: " .. item.prefab)
+        for i = inventory:NumItems(), 1, -1 do
+            local item = inventory:GetItemInSlot(i)
+            printString(item.prefab, "", uuid)
+            if item and not locked_items[i] then
+                for i, chest in pairs(nearby_entities) do
+                    if chest and chest.components.container and not chest.components.container:IsBusy() then
+                        local can_accept = chest.components.container:CanAcceptCount(item)
+                        printString("[" .. tostring(i) .. "] Can accept count: " .. tostring(can_accept), "", uuid)
+                        if can_accept > 0 then
+                            if MoveItemToContainer(player, item, chest) then
+                                break
+                            end
+                            --if chest.components.container:GiveItem(item, nil, player:GetPosition()) then
+                            --    printString("[" .. tostring(i) .. "] Item placed in container at position:" .. chest:GetPosition(), "", uuid)
+                            --    break
+                            --end
+                        end
+                    end
                 end
+                printString("没有合适的箱子存放物品: " .. item.prefab, "", uuid)
             end
         end
     end
 
-    local function OnSortButtonClick()
-        local player = GetPlayer()
-        if player then
-            SortInventoryToNearbyChests(player)
+    --local function AddSortButton(screen)
+    --    local button = screen:AddChild(ImageButton("path_to_button_texture", "path_to_button_hover_texture"))
+    --    button:SetOnClick(SendModRPCToServer(GLOBAL.MOD_RPC[modname]["ItemCategory"]))
+    --    button:SetPosition(0, -50) -- 调整按钮位置
+    --end
+
+    --AddClassPostConstruct("screens/playerhud", function(self)
+    --    AddSortButton(self)
+    --end)
+
+    local category = GLOBAL.require("widgets/category") --加载hello类
+
+    local function addCategoryWidget(self)
+        self.category = self:AddChild(category())-- 为controls添加hello widget。
+        self.category:SetHAnchor(0) -- 设置原点x坐标位置，0、1、2分别对应屏幕中、左、右
+        self.category:SetVAnchor(1) -- 设置原点y坐标位置，0、1、2分别对应屏幕中、上、下
+        self.category:SetPosition(70, -50, 0) -- 设置hello widget相对原点的偏移量，70，-50表明向右70，向下50，第三个参数无意义。
+        self.category:SetOnClick(function()
+            local uuid = utils.genUUID()
+            printString("点击了分类按钮", "", uuid)
+            SendModRPCToServer(GLOBAL.MOD_RPC[modname]["itemCategory"], uuid)
+        end)
+    end
+
+    local function itemCategory(inst, uuid)
+        if TheNet:GetIsServer() then
+            if inst and inst.components and inst.components.inventory then
+                SortInventoryToNearbyChests(inst, uuid)
+            end
         end
     end
 
-    local function AddSortButton(screen)
-        local button = screen:AddChild(ImageButton("path_to_button_texture", "path_to_button_hover_texture"))
-        button:SetOnClick(OnSortButtonClick)
-        button:SetPosition(0, -50) -- 调整按钮位置
+    AddModRPCHandler(modname, "itemCategory", itemCategory)
+
+    AddClassPostConstruct("widgets/controls", addCategoryWidget) -- 这个函数是官方的MOD API，用于修改游戏中的类的构造函数。第一个参数是类的文件路径，根目录为scripts。第二个自定义的修改函数，第一个参数固定为self，指代要修改的类。
+
+    local function ToggleLockItem(inventory, slot)
+        if locked_items[slot] or locked_items[slot] == false then
+            locked_items[slot] = true
+        else
+            locked_items[slot] = false
+        end
+        -- 刷新物品栏显示
+        inventory:Refresh()
     end
 
+    local Widget = require("widgets/widget")
+    local Button = require("widgets/button")
+    local TextButton = require("widgets/textbutton")
 
-    AddClassPostConstruct("screens/playerhud", function(self)
-        AddSortButton(self)
+    local function AddLockButton(inventory, slot)
+        --local lockButton = Button("lock_button", "images/ui.xml", "lock.tex", "lock_down.tex")
+        local lockButton = TextButton(BODYTEXTFONT, 30, "按钮")
+        lockButton:SetPosition(10, 10, 0)  -- 设置按钮位置在右上角
+        lockButton:SetText("锁定")
+        lockButton:SetTextColour(1, 1, 1, 1)
+        lockButton:SetOnClick(function()
+            ToggleLockItem(inventory, slot)
+        end)
+        inventory.slots[slot]:AddChild(lockButton)
+    end
+
+    AddPlayerPostInit(function(player)
+        local inventory = player.components.inventory
+        for i = 1, inventory.numslots do
+            AddLockButton(inventory, i)
+        end
     end)
-
-    local hello = GLOBAL.require("widgets/hello") --加载hello类
-
-    local function addHelloWidget(self)
-        self.hello = self:AddChild(hello())-- 为controls添加hello widget。
-        self.hello:SetHAnchor(0) -- 设置原点x坐标位置，0、1、2分别对应屏幕中、左、右
-        self.hello:SetVAnchor(1) -- 设置原点y坐标位置，0、1、2分别对应屏幕中、上、下
-        self.hello:SetPosition(70,-50,0) -- 设置hello widget相对原点的偏移量，70，-50表明向右70，向下50，第三个参数无意义。
-    end
-
-    AddClassPostConstruct("widgets/controls", addHelloWidget) -- 这个函数是官方的MOD API，用于修改游戏中的类的构造函数。第一个参数是类的文件路径，根目录为scripts。第二个自定义的修改函数，第一个参数固定为self，指代要修改的类。
-
 end
 
