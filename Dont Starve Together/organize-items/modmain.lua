@@ -114,14 +114,17 @@ if IsModEnable(modname) then
         local timeElapsed = 0
 
         -- 创建一个新的实体来表示移动的物品
-        local movingItem = item:Clone()
-        movingItem.Transform:SetPosition(startPos:Get())
+        --local movingItem = item:Clone()
+        --movingItem.Transform:SetPosition(startPos:Get())
+        --movingItem:AddTag("moving_item")
+
+        local movingItem = item
         movingItem:AddTag("moving_item")
 
         --inventory:DropItem(item)
 
         -- 将物品从物品栏移除
-        inventory:RemoveItem(item)
+        --inventory:RemoveItem(item)
 
         -- 更新函数
         local function Update(dt)
@@ -137,7 +140,7 @@ if IsModEnable(modname) then
                     -- 如果放置失败，将物品放回玩家物品栏
                     inventory:GiveItem(movingItem, nil, player:GetPosition())
                 end
-                movingItem:Remove()
+                --movingItem:Remove()
                 return
             end
 
@@ -157,7 +160,9 @@ if IsModEnable(modname) then
     local function SortInventoryToNearbyChests(player, uuid)
         local inventory = player.components.inventory
         local pos = player:GetPosition()
-        local nearby_entities = TheSim:FindEntities(pos.x, pos.y, pos.z, 5, { "chest" })
+        --local nearby_entities = TheSim:FindEntities(pos.x, pos.y, pos.z, 5, { "chest" })
+
+        local nearby_entities = TheSim:FindEntities(pos.x, pos.y, pos.z, 10, nil, {'NOBLOCK', 'player', 'FX' }) or {}
         if not nearby_entities or #nearby_entities == 0 then
             printString("没有找到附近的箱子", "", uuid)
             return
@@ -167,7 +172,7 @@ if IsModEnable(modname) then
             printString(item.prefab, "", uuid)
             if item and not locked_items[i] then
                 for i, chest in pairs(nearby_entities) do
-                    if chest and chest.components.container and not chest.components.container:IsBusy() then
+                    if chest and chest:IsValid() and chest.entity:IsVisible() and chest.components.container and not chest.components.container:IsBusy() then
                         local can_accept = chest.components.container:CanAcceptCount(item)
                         printString("[" .. tostring(i) .. "] Can accept count: " .. tostring(can_accept), "", uuid)
                         if can_accept > 0 then
@@ -223,11 +228,7 @@ if IsModEnable(modname) then
     AddClassPostConstruct("widgets/controls", addCategoryWidget) -- 这个函数是官方的MOD API，用于修改游戏中的类的构造函数。第一个参数是类的文件路径，根目录为scripts。第二个自定义的修改函数，第一个参数固定为self，指代要修改的类。
 
     local function ToggleLockItem(inventory, slot)
-        if locked_items[slot] or locked_items[slot] == false then
-            locked_items[slot] = true
-        else
-            locked_items[slot] = false
-        end
+        locked_items[slot] = not locked_items[slot]
         -- 刷新物品栏显示
         inventory:Refresh()
     end
