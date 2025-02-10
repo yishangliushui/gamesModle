@@ -162,7 +162,7 @@ if IsModEnable(modname) then
         local pos = player:GetPosition()
         --local nearby_entities = TheSim:FindEntities(pos.x, pos.y, pos.z, 5, { "chest" })
 
-        local nearby_entities = TheSim:FindEntities(pos.x, pos.y, pos.z, 10, nil, {'NOBLOCK', 'player', 'FX' }) or {}
+        local nearby_entities = TheSim:FindEntities(pos.x, pos.y, pos.z, 10, nil, { 'NOBLOCK', 'player', 'FX' }) or {}
         if not nearby_entities or #nearby_entities == 0 then
             printString("没有找到附近的箱子", "", uuid)
             return
@@ -247,6 +247,91 @@ if IsModEnable(modname) then
             ToggleLockItem(inventory, slot)
         end)
         inventory.slots[slot]:AddChild(lockButton)
+    end
+
+    -- 修改后的物品移动函数（包含错误修复和性能优化）
+    local function StartMovingItem(item, player, chest, onComplete)
+        if not (item and item:IsValid() and chest and chest:IsValid()) then
+            return -- 防止无效实体操作
+        end
+
+        -- 计算移动参数
+        local start_pos = Vector3(player.Transform:GetWorldPosition())
+        local target_pos = Vector3(chest.Transform:GetWorldPosition())
+        local direction = (target_pos - start_pos):Normalize()
+        local distance = start_pos:Dist(target_pos)
+
+        -- 参数验证
+        if distance < 0.1 then
+            if onComplete then onComplete() end
+            return
+        end
+
+        -- 动画控制逻辑
+        local function ManageChestAnimation()
+            if not chest:IsValid() then return end
+            -- 打开动画
+            if chest.AnimState and not chest.AnimState:IsCurrentAnimation("open") then
+                chest.AnimState:PlayAnimation("open")
+            end
+            -- 取消之前的关闭任务
+            if chest.close_task then
+                -- :Cancel
+                chest.close_task = nil
+            end
+            -- 设置新的关闭任务（延迟1.5秒）
+            chest.close_task = chest:DoTaskInTime(1.5, function()
+                if chest.AnimState then
+                    chest.AnimState:PlayAnimation("close")
+                end
+            end)
+        end
+
+        -- 运动参数
+        local speed = 1  -- 更合理的移动速度（格/秒）
+        local duration = distance / speed
+        local elapsed = 0
+
+        -- 创建临时物理组件（避免与其他系统冲突）
+        item:AddTag("NOCLICK")
+        item.Physics:SetCollisionMask(COLLISION.GROUND)
+
+        -- 运动更新任务
+        item:DoPeriodicTask(FRAMES, function()
+            if not (item:IsValid() and chest:IsValid()) then
+                return
+            end
+
+            elapsed = elapsed + FRAMES
+            if elapsed >= duration then
+                -- 最终位置校准
+                item.Transform:SetPosition(target_pos:Get())
+                item:RemoveTag("NOCLICK")
+                ManageChestAnimation()
+                if onComplete then onComplete() end
+                return
+            end
+
+            -- 插值计算位置
+            local ratio = elapsed / duration
+            local current_pos = start_pos + direction * distance * ratio
+            item.Transform:SetPosition(current_pos:Get())
+        end)
+    end
+
+    -- 使用示例修改：
+    local function OnTransferItem(item, player, chest)
+        StartMovingItem(item, player, chest, function()
+            -- 移动完成后的回调
+            if chest.components.container then
+                -- 如果放置失败，将物品放回玩家物品栏
+                if chest.components.container:GiveItem(item, nil, player:GetPosition()) then
+                else
+                    -- 如果放置失败，将物品放回玩家物品栏
+                    player.components.inventory:GiveItem(item, nil, player:GetPosition())
+                end
+            end
+        end)
     end
 
     AddPlayerPostInit(function(player)

@@ -78,3 +78,15 @@ https://www.zhihu.com/people/xingxing_2014/posts
 https://atjiu.github.io/dstmod-tutorial/#/
 https://www.dstmod.com/component/
 https://n77a3mjegs.feishu.cn/docx/K9bUdpb5Qo85j2xo8XkcOsU1nuh?from=from_copylink
+
+
+饥荒mod功能代码实现：物品自动收纳
+1. 注册按键事件，当按下特定键时执行函数。
+2. 获取玩家物品栏中的所有物品，遍历这些物品
+3. 查找周围的容器，需要用TheSim:FindEntities或类似的方法，根据位置和半径搜索
+4. 对于每个物品，判断是否有对应的容器可以存放
+5. 如果有对应的容器，将物品移动到该容器中，需要处理堆叠逻辑，比如先尝试合并已有堆叠，再放入空位
+6、物品移动到箱子或容器有一个移动的过程
+7、物品移动到箱子后容器的位置后，箱子或容器触发打开动画
+8、物品都放入成功后，箱子或容器触发关闭动画
+
