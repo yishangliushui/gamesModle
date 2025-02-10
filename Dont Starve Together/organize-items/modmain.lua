@@ -252,7 +252,7 @@ if IsModEnable(modname) then
     -- 修改后的物品移动函数（包含错误修复和性能优化）
     local function StartMovingItem(item, player, chest, onComplete)
         if not (item and item:IsValid() and chest and chest:IsValid()) then
-            return -- 防止无效实体操作
+            return false
         end
 
         -- 计算移动参数
@@ -264,7 +264,7 @@ if IsModEnable(modname) then
         -- 参数验证
         if distance < 0.1 then
             if onComplete then onComplete() end
-            return
+            return true
         end
 
         -- 动画控制逻辑
@@ -317,22 +317,22 @@ if IsModEnable(modname) then
             local current_pos = start_pos + direction * distance * ratio
             item.Transform:SetPosition(current_pos:Get())
         end)
+        return true
     end
 
-    -- 使用示例修改：
-    local function OnTransferItem(item, player, chest)
-        StartMovingItem(item, player, chest, function()
-            -- 移动完成后的回调
-            if chest.components.container then
+    local function onComplete (item, player, chest)
+        -- 移动完成后的回调
+        if chest.components.container then
+            -- 如果放置失败，将物品放回玩家物品栏
+            if chest.components.container:GiveItem(item, nil, player:GetPosition()) then
+            else
                 -- 如果放置失败，将物品放回玩家物品栏
-                if chest.components.container:GiveItem(item, nil, player:GetPosition()) then
-                else
-                    -- 如果放置失败，将物品放回玩家物品栏
-                    player.components.inventory:GiveItem(item, nil, player:GetPosition())
-                end
+                player.components.inventory:GiveItem(item, nil, player:GetPosition())
             end
-        end)
+        end
     end
+
+    StartMovingItem(item, player, chest , onComplete)
 
     AddPlayerPostInit(function(player)
         local inventory = player.components.inventory
