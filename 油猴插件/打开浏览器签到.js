@@ -4,7 +4,7 @@
 // @version      0.1
 // @description  打开浏览器时自动签到
 // @author       YourName
-// @match        *://www.bing.com/*
+// @match        *.bing.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_notification
 // @grant        GM_getValue
@@ -77,6 +77,8 @@
           const decodedText = decoder.decode(uint8Array);
 
           const formhashMatch = decodedText.match(/formhash=([a-f0-9]+)/);
+          console.log("decodedText" + decodedText)
+          console.log("decodedText" + formhashMatch)
           resolve(formhashMatch ? formhashMatch[1] : null);
         }
       });
@@ -95,7 +97,7 @@
       showNotification('今日已完成签到');
     } else {
       showNotification('签到结果解析失败');
-      GM_setValue('lastSign', null);
+      GM_setValue('lastSignWindow', null);
     }
   };
 
@@ -111,11 +113,11 @@
   // 在页面加载完成后执行签到
   window.addEventListener('load', () => {
     console.log('页面加载完成，开始自动签到...');
-    const lastSign = GM_getValue('lastSign', '');
+    const lastSignWindow = GM_getValue('lastSignWindow', '');
     const today = new Date().toDateString();
-    if (lastSign !== today) {
+    if (lastSignWindow !== today) {
       doSign();
-      GM_setValue('lastSign', today);
+      GM_setValue('lastSignWindow', today);
     }
   });
 })();
