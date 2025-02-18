@@ -87,14 +87,14 @@
     // alert("脚本已成功运行！结果为：" + decodeURIComponent(encodeURIComponent(text)));
     console.log(text);
     alert("脚本已成功运行！结果为：" + resultMatch[1].trim())
-    // resultMatch
-    // if (resultMatch) {
-    //   showNotification(resultMatch[1].trim());
-    // } else if (text.includes('今日已签')) {
-    //   showNotification('今日已完成签到');
-    // } else {
-    //   showNotification('签到结果解析失败');
-    // }
+    if (resultMatch) {
+      showNotification(resultMatch[1].trim());
+    } else if (text.includes('今日已签')) {
+      showNotification('今日已完成签到');
+    } else {
+      showNotification('签到结果解析失败');
+      GM_setValue('lastSign', null);
+    }
   };
 
   // 显示桌面通知
