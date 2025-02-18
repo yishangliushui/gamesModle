@@ -332,7 +332,7 @@ if IsModEnable(modname) then
         end
     end
 
-    StartMovingItem(item, player, chest , onComplete)
+    --StartMovingItem(item, player, chest , onComplete)
 
     AddPlayerPostInit(function(player)
         local inventory = player.components.inventory
