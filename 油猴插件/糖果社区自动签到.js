@@ -83,10 +83,10 @@
 
   // 处理签到响应
   const handleResponse = (text) => {
-    const resultMatch = text.match(/<div class="c">([^<]+)</);
+    const resultMatch = text.match(/<div class="c">\s*([^<]+)\s*<\/div>/);
     // alert("脚本已成功运行！结果为：" + decodeURIComponent(encodeURIComponent(text)));
-    // console.log(text);
-    alert("脚本已成功运行！结果为：" + resultMatch)
+    console.log(text);
+    alert("脚本已成功运行！结果为：" + resultMatch[1].trim())
     // resultMatch
     // if (resultMatch) {
     //   showNotification(resultMatch[1].trim());
