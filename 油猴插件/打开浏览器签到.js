@@ -70,9 +70,11 @@
           const decoder = new TextDecoder('gbk'); // 假设服务器返回的是 GBK 编码
           const decodedText = decoder.decode(uint8Array);
           const resultMatch = decodedText.match("抱歉，本期您已申请过此任务，请下期再来");
+          const resultMatchError = decodedText.match("抱歉，本期您已申请过此任务，请下期再来");
           console.log(decodedText);
-          console.log(resultMatch)
-          if (resultMatch !== null) {
+          console.log("resultMatch="+ resultMatch)
+          console.log("resultMatchError=" + resultMatchError)
+          if (resultMatch !== null || resultMatchError !== null) {
             const today = new Date().toDateString();
             GM_setValue('lastApply', today);
             console.log("任务申请成功")
@@ -124,6 +126,7 @@
       GM_setValue('lastSignWindow', today);
     } else if (text.includes('今日已签')) {
       showNotification('今日已完成签到');
+      GM_setValue('lastSignWindow', today);
     } else {
       showNotification('签到结果解析失败');
       GM_setValue('lastSignWindow', null);
@@ -291,8 +294,10 @@
           const decodedText = decoder.decode(uint8Array);
 
           const resultMatch = decodedText.match("恭喜您，任务已成功完成，您将收到奖励通知，请注意查收");
-          // console.log(decodedText);
+          const resultMatchError = decodedText.match("不是进行中的任务");
+          console.log(decodedText);
           console.log(resultMatch)
+          console.log(resultMatchError)
           if (resultMatch !== null) {
             const today = new Date().toDateString();
             GM_setValue('lastDraw', today);
@@ -314,12 +319,12 @@
   window.addEventListener('load', () => {
     const today = new Date().toDateString();
     console.log('页面加载完成，开始自动签到...');
-    const lastSignWindow = GM_getValue('lastSignWindow', '');
-    const lastApply = GM_getValue('lastApply', '');
-    const lastComment = GM_getValue('lastComment', '');
-    const lastDraw = GM_getValue('lastDraw', today);
+    const lastSignWindow1 = GM_getValue('lastSignWindow', '');
+    const lastApply1 = GM_getValue('lastApply', '');
+    const lastComment1 = GM_getValue('lastComment', '');
+    const lastDraw1 = GM_getValue('lastDraw', today);
 
-    if (lastSignWindow === today && lastApply === today && lastComment === today && lastDraw === today) {
+    if (lastSignWindow1 === today && lastApply1 === today && lastComment1 === today && lastDraw1 === today) {
       console.log('已全部执行成功')
       return
     }
@@ -378,11 +383,15 @@
       }
 
       setTimeout(() => {
-        const lastSignWindow = GM_getValue('lastSignWindow', '');
-        const lastApply = GM_getValue('lastApply', '');
-        const lastComment = GM_getValue('lastComment', '');
-        const lastDraw = GM_getValue('lastDraw', today);
-        alert("脚本已成功运行！结果为：" + lastSignWindow + " " + lastApply + " " + lastComment + " " + lastDraw)
+        const lastSignWindow2 = GM_getValue('lastSignWindow', '');
+        const lastApply2 = GM_getValue('lastApply', '');
+        const lastComment2 = GM_getValue('lastComment', '');
+        const lastDraw2 = GM_getValue('lastDraw', today);
+        alert("脚本已成功运行！结果为：" +
+            "lastSignWindow2=" + lastSignWindow2 === today + " " +
+            "lastApply2=" + lastApply2 === today + " " +
+            "lastComment2=" + lastComment2 === today+ " " +
+            "lastDraw2=" + lastDraw2 === today)
       }, 12000)
     }, 3000)
   });
