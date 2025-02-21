@@ -115,9 +115,9 @@
   // 处理签到响应
   const handleResponse = (text) => {
     const resultMatch = text.match(/<div class="c">\s*([^<]+)\s*<\/div>/);
-    // alert("脚本已成功运行！结果为：" + decodeURIComponent(encodeURIComponent(text)));
-    console.log(text);
-    alert("脚本已成功运行！结果为：" + resultMatch[1].trim())
+    // console.log(text);
+    console.log("脚本已成功运行！结果为：" + resultMatch[1].trim());
+    // alert("脚本已成功运行！结果为：" + resultMatch[1].trim())
     if (resultMatch) {
       showNotification(resultMatch[1].trim());
       const today = new Date().toDateString();
@@ -167,7 +167,7 @@
         // 解析响应数据
         const responseData = response.response; // 响应数据是 JSON 对象
         const dataValue = responseData.data;
-        console.log('提取的 data 值:', dataValue);
+        // console.log('提取的 data 值:', dataValue);
         GM_setValue('dataValue', dataValue);
       },
       onerror: function (error) {
@@ -189,8 +189,8 @@
       },
       responseType: "arraybuffer",
       onload: function (response) {
-        console.log('响应状态码:', response.status);
-        console.log('响应头部:', response.responseHeaders);
+        // console.log('响应状态码:', response.status);
+        // console.log('响应头部:', response.responseHeaders);
 
         if (response.status !== 200) {
           console.error("请求失败，状态码:", response.status);
@@ -289,10 +289,13 @@
           const uint8Array = new Uint8Array(response.response);
           const decoder = new TextDecoder('gbk'); // 假设服务器返回的是 GBK 编码
           const decodedText = decoder.decode(uint8Array);
-          const resultMatch = decodedText.match("不是进行中的任务");
-          console.log(decodedText);
+
+          const resultMatch = decodedText.match("恭喜您，任务已成功完成，您将收到奖励通知，请注意查收");
+          // console.log(decodedText);
           console.log(resultMatch)
           if (resultMatch !== null) {
+            const today = new Date().toDateString();
+            GM_setValue('lastDraw', today);
             console.log("领取成功")
             return;
           }
@@ -307,68 +310,80 @@
     });
   }
 
-
   // 在页面加载完成后执行签到
   window.addEventListener('load', () => {
     const today = new Date().toDateString();
     console.log('页面加载完成，开始自动签到...');
     const lastSignWindow = GM_getValue('lastSignWindow', '');
-    GM_setValue('lastSignWindow', '');
-    if (lastSignWindow !== today) {
-      getFormhash();
-      setTimeout(() => {
-        // 先获取formhash（动态获取更安全）
-        const formhash = GM_getValue('formhash', '')
-        if (!formhash) {
-          alert("脚本已成功运行！结果为：获取formhash失败")
-          showNotification('获取formhash失败');
-          console.log(formhash)
-          return;
-        }
-        doSign(formhash)
+    const lastApply = GM_getValue('lastApply', '');
+    const lastComment = GM_getValue('lastComment', '');
+    const lastDraw = GM_getValue('lastDraw', today);
 
-        // 申请任务
-        const lastApply = GM_getValue('lastApply', '');
-        if (lastApply !== today) {
-          doApplyTask()
-        }
-        // 评论
-        console.log('页面加载完成，开始自动评论...');
-        // GM_setValue('12345', '');
-        const lastComment = GM_getValue('lastComment', '');
-        if (lastComment !== today) {
-          getImage(formhash);
-          setTimeout(() => {
-            const base64String = GM_getValue('base64String', '');
-            GM_setValue('dataValue', '');
-            if (base64String !== "") {
-              getImageCode(base64String)
-            }
-            setTimeout(() => {
-              let dataValue = GM_getValue('dataValue', '');
-              if (dataValue === "") {
-                setTimeout(() => {
-                  dataValue = GM_getValue('dataValue', '')
-                  if (dataValue !== "") {
-                    doComment(dataValue, formhash)
-                    // 获取奖励
-                    setTimeout(() => {
-                      getDraw();
-                    }, 2000)
-                  }
-                }, 2000)
-              } else {
-                doComment(dataValue, formhash)
-                setTimeout(() => {
-                  getDraw();
-                }, 2000)
-              }
-            }, 2000)
-          }, 2000);
-        }
-
-      }, 3000)
+    if (lastSignWindow === today && lastApply === today && lastComment === today && lastDraw === today) {
+      console.log('已全部执行成功')
+      return
     }
-    getDraw();
+    getFormhash();
+    setTimeout(() => {
+      // 先获取formhash（动态获取更安全）
+      const formhash = GM_getValue('formhash', '')
+      if (!formhash) {
+        alert("脚本已成功运行！结果为：获取formhash失败")
+        showNotification('获取formhash失败');
+        console.log(formhash)
+        return;
+      }
+      const lastSignWindow = GM_getValue('lastSignWindow', '');
+      if (lastSignWindow !== today) {
+        doSign(formhash)
+      }
+
+      // 申请任务
+      const lastApply = GM_getValue('lastApply', '');
+      if (lastApply !== today) {
+        doApplyTask()
+      }
+      // 评论
+      console.log('页面加载完成，开始自动评论...');
+      const lastComment = GM_getValue('lastComment', '');
+      if (lastComment !== today) {
+        getImage(formhash);
+        setTimeout(() => {
+          const base64String = GM_getValue('base64String', '');
+          GM_setValue('dataValue', '');
+          if (base64String !== "") {
+            getImageCode(base64String)
+          }
+          setTimeout(() => {
+            let dataValue = GM_getValue('dataValue', '');
+            if (dataValue === "") {
+              setTimeout(() => {
+                dataValue = GM_getValue('dataValue', '')
+                if (dataValue !== "") {
+                  doComment(dataValue, formhash)
+                  // 获取奖励
+                  setTimeout(() => {
+                    getDraw();
+                  }, 2000)
+                }
+              }, 2000)
+            } else {
+              doComment(dataValue, formhash)
+              setTimeout(() => {
+                getDraw();
+              }, 2000)
+            }
+          }, 2000)
+        }, 2000);
+      }
+
+      setTimeout(() => {
+        const lastSignWindow = GM_getValue('lastSignWindow', '');
+        const lastApply = GM_getValue('lastApply', '');
+        const lastComment = GM_getValue('lastComment', '');
+        const lastDraw = GM_getValue('lastDraw', today);
+        alert("脚本已成功运行！结果为：" + lastSignWindow + " " + lastApply + " " + lastComment + " " + lastDraw)
+      }, 12000)
+    }, 3000)
   });
 })();
