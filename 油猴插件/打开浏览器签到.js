@@ -388,10 +388,10 @@
         const lastComment2 = GM_getValue('lastComment', '');
         const lastDraw2 = GM_getValue('lastDraw', today);
         alert("脚本已成功运行！结果为：" +
-            "lastSignWindow2=" + lastSignWindow2 === today + " " +
-            "lastApply2=" + lastApply2 === today + " " +
-            "lastComment2=" + lastComment2 === today+ " " +
-            "lastDraw2=" + lastDraw2 === today)
+            "lastSignWindow=" + (lastSignWindow2 === today) + " " +
+            "lastApply=" + (lastApply2 === today) + " " +
+            "lastComment=" + (lastComment2 === today)+ " " +
+            "lastDraw=" + (lastDraw2 === today))
       }, 12000)
     }, 3000)
   });
