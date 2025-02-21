@@ -26,7 +26,7 @@
     params.append('qdmode', '2'); // 签到模式
     params.append('todaysay', '');
     params.append('fastreply', '1');
-
+    console.log("获取到的formhash为：" + formhash);
     // 发送签到请求
     GM_xmlhttpRequest({
       method: "POST",
@@ -68,11 +68,13 @@
           const decodedText = decoder.decode(uint8Array);
 
           const formhashMatch = decodedText.match(/formhash=([a-f0-9]+)/);
-          console.log("decodedText" + decodedText)
-          console.log("decodedText" + formhashMatch)
+          console.log("decodedText=" + decodedText)
           resolve(formhashMatch ? formhashMatch[1] : null);
         }
       });
+    }).then((result) => {
+      console.log("______decodedText_result______：", result)
+      GM_setValue('formhash', result)
     });
   };
 
@@ -84,6 +86,8 @@
     alert("脚本已成功运行！结果为：" + resultMatch[1].trim())
     if (resultMatch) {
       showNotification(resultMatch[1].trim());
+      const today = new Date().toDateString();
+      GM_setValue('lastSignWindow', today);
     } else if (text.includes('今日已签')) {
       showNotification('今日已完成签到');
     } else {
@@ -199,7 +203,7 @@
     const params = new URLSearchParams();
     params.append('id', 'dsu_paulsign:sign');
     params.append('operation', 'qiandao');
-    params.append('formhash', formhash);
+    // params.append('formhash', formhash);
     params.append('qdxq', 'ch'); // 心情参数
     params.append('qdmode', '2'); // 签到模式
     params.append('todaysay', '');
@@ -208,7 +212,7 @@
     // 发送签到请求
     GM_xmlhttpRequest({
       method: "POST",
-      url: "https://www.tangguo2.com/plugin.php?infloat=1&inajax=1",
+      url: "https://www.tangguo2.com/forum.php?mod=post&action=reply&fid=54&tid=7139&extra=page%3D1&replysubmit=yes&infloat=yes&handlekey=fastpost&inajax=1",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         "Origin": "https://www.tangguo2.com",
@@ -238,30 +242,32 @@
     const today = new Date().toDateString();
     console.log('页面加载完成，开始自动签到...');
     const lastSignWindow = GM_getValue('lastSignWindow', '');
-    const formhash = getFormhash();;
+    getFormhash();;
     if (lastSignWindow !== today) {
-      // 先获取formhash（动态获取更安全）
-      if (!formhash) {
-        alert("脚本已成功运行！结果为：获取formhash失败")
-        showNotification('获取formhash失败');
-        console.log(formhash)
-        return;
-      }
-      doSign(formhash);
-      GM_setValue('lastSignWindow', today);
-    }
-    console.log('页面加载完成，开始自动评论...');
-    const lastComment = GM_getValue('lastComment', '');
-    if (lastComment !== today) {
-      getImage(formhash);
-      setTimeout(() => {
-        const base64String = GM_getValue('base64String', '');
-        if (base64String !== ""){
-            getImageCode(base64String)
+      setTimeout(()=> {
+        // 先获取formhash（动态获取更安全）
+        const formhash = GM_getValue('formhash', '')
+        if (!formhash) {
+          alert("脚本已成功运行！结果为：获取formhash失败")
+          showNotification('获取formhash失败');
+          console.log(formhash)
+          return;
         }
-        const dataValue = GM_getValue('dataValue', '');
-        doComment(dataValue)
-      }, 2000);
+        doSign(formhash)
+      }, 3000)
     }
+    // console.log('页面加载完成，开始自动评论...');
+    // const lastComment = GM_getValue('lastComment', '');
+    // if (lastComment !== today) {
+    //   getImage(formhash);
+    //   setTimeout(() => {
+    //     const base64String = GM_getValue('base64String', '');
+    //     if (base64String !== ""){
+    //         getImageCode(base64String)
+    //     }
+    //     const dataValue = GM_getValue('dataValue', '');
+    //     doComment(dataValue)
+    //   }, 2000);
+    // }
   });
 })();
