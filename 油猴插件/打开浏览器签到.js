@@ -12,11 +12,11 @@
 // @run-at       document-start
 // ==/UserScript==
 
-(function() {
+(function () {
   'use strict';
 
   // 签到主函数
-  const doSign = function (formhash){
+  const doSign = function (formhash) {
     // 构造请求参数
     const params = new URLSearchParams();
     params.append('id', 'dsu_paulsign:sign');
@@ -38,7 +38,7 @@
       },
       data: params.toString(),
       responseType: "arraybuffer", // 获取原始字节数据
-      onload: function(response) {
+      onload: function (response) {
         if (response.status === 200) {
           const uint8Array = new Uint8Array(response.response);
           const decoder = new TextDecoder('gbk'); // 假设服务器返回的是 GBK 编码
@@ -48,9 +48,43 @@
           showNotification('签到失败，状态码：' + response.status);
         }
       },
-      onerror: function(error) {
+      onerror: function (error) {
         showNotification('请求失败：' + error);
         alert("脚本已成功运行！结果为：请求失败：" + error)
+      }
+    });
+  }
+
+  const doApplyTask = function () {
+    GM_xmlhttpRequest({
+      method: "GET",
+      url: "https://www.tangguo2.com/home.php?mod=task&do=apply&id=13",
+      headers: {
+        "Origin": "https://www.tangguo2.com",
+        "Referer": "https://www.tangguo2.com/home.php?mod=task&do=apply&id=13"
+      },
+      responseType: "arraybuffer", // 获取原始字节数据
+      onload: function (response) {
+        if (response.status === 200) {
+          const uint8Array = new Uint8Array(response.response);
+          const decoder = new TextDecoder('gbk'); // 假设服务器返回的是 GBK 编码
+          const decodedText = decoder.decode(uint8Array);
+          const resultMatch = decodedText.match("抱歉，本期您已申请过此任务，请下期再来");
+          console.log(decodedText);
+          console.log(resultMatch)
+          if (resultMatch !== null) {
+            const today = new Date().toDateString();
+            GM_setValue('lastApply', today);
+            console.log("任务申请成功")
+            return;
+          }
+          console.log("任务申请失败")
+        } else {
+          console.log("任务申请失败" + response.status);
+        }
+      },
+      onerror: function (error) {
+        alert("任务失败失败：" + error)
       }
     });
   }
@@ -62,7 +96,7 @@
         method: "GET",
         url: "https://www.tangguo2.com/plugin.php?id=dsu_paulsign:sign",
         responseType: "arraybuffer", // 获取原始字节数据
-        onload: function(response) {
+        onload: function (response) {
           const uint8Array = new Uint8Array(response.response);
           const decoder = new TextDecoder('gbk'); // 假设服务器返回的是 GBK 编码
           const decodedText = decoder.decode(uint8Array);
@@ -106,7 +140,7 @@
   };
 
 
-  const getImageCode = function (base64String){
+  const getImageCode = function (base64String) {
     // 调用自动识别验证码接口
     // https://imgcode.toolshu.com/api
     console.log('请求的 base64String:', base64String);
@@ -135,14 +169,6 @@
         const dataValue = responseData.data;
         console.log('提取的 data 值:', dataValue);
         GM_setValue('dataValue', dataValue);
-        // response.response
-        // {
-        //   "code": 200,
-        //   "data": "Ceek",
-        //   "msg": "识别完成",
-        //   "remaining_calls_today": 95,
-        //   "success": true
-        // }
       },
       onerror: function (error) {
         console.error('错误:', error);
@@ -171,7 +197,7 @@
           return;
         }
         console.log('响应数据:', response.response);
-        const blob = new Blob([response.response], { type: 'image/png' });
+        const blob = new Blob([response.response], {type: 'image/png'});
 
         // 将 Blob 转换为 Base64 字符串
         const base64StringPromise = new Promise((resolve, reject) => {
@@ -185,7 +211,7 @@
         // setTimeout(() => {}, 5000);
         base64StringPromise.then((result) => {
           console.log("______result______：", result)
-          if (result === "data:image/png;base64,QWNjZXNzIERlbmllZA=="){
+          if (result === "data:image/png;base64,QWNjZXNzIERlbmllZA==") {
             alert("脚本已成功运行！结果为：获取验证码失败")
             return;
           }
@@ -198,53 +224,99 @@
     });
   };
 
-  const doComment = function (dataValue){
+  const doComment = function (dataValue, formhash) {
     // 构造请求参数
+    console.log('请求的 dataValue:', dataValue);
+    console.log('请求的 formhash:', formhash);
     const params = new URLSearchParams();
-    params.append('id', 'dsu_paulsign:sign');
-    params.append('operation', 'qiandao');
-    // params.append('formhash', formhash);
-    params.append('qdxq', 'ch'); // 心情参数
-    params.append('qdmode', '2'); // 签到模式
-    params.append('todaysay', '');
-    params.append('fastreply', '1');
+    params.append('message', '不清楚，桌子上的VR资源分享网站就是给力！');
+    params.append('seccodehash', 'cSmX0Gzc');
+    params.append('seccodemodid', 'forum::viewthread');
+    params.append('seccodeverify', dataValue);
+    params.append('formhash', formhash);
+    params.append('subject', '');
+    params.append('usesig', '');
 
     // 发送签到请求
     GM_xmlhttpRequest({
       method: "POST",
-      url: "https://www.tangguo2.com/forum.php?mod=post&action=reply&fid=54&tid=7139&extra=page%3D1&replysubmit=yes&infloat=yes&handlekey=fastpost&inajax=1",
+      url: "https://www.tangguo2.com/forum.php?mod=post&action=reply&fid=61&tid=2376&extra=page%3D1&replysubmit=yes&infloat=yes&handlekey=fastpost&inajax=1",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        "Origin": "https://www.tangguo2.com",
-        "Referer": "https://www.tangguo2.com/plugin.php?id=dsu_paulsign:sign"
+        "Origin": "https://www.tangguo2.com/forum.php",
+        "Referer": "https://www.tangguo2.com/forum.php"
       },
       data: params.toString(),
       responseType: "arraybuffer", // 获取原始字节数据
-      onload: function(response) {
+      onload: function (response) {
         if (response.status === 200) {
           const uint8Array = new Uint8Array(response.response);
           const decoder = new TextDecoder('gbk'); // 假设服务器返回的是 GBK 编码
           const decodedText = decoder.decode(uint8Array);
-          handleResponse(decodedText);
+          const resultMatch = decodedText.match("非常感谢，回复发布成功");
+          console.log(decodedText);
+          console.log(resultMatch)
+          if (resultMatch !== null) {
+            const today = new Date().toDateString();
+            GM_setValue('lastComment', today);
+            console.log("发布成功")
+            return;
+          }
+          console.log("发布失败")
         } else {
-          showNotification('签到失败，状态码：' + response.status);
+          console.log("发布失败" + response.status);
         }
       },
-      onerror: function(error) {
+      onerror: function (error) {
         showNotification('请求失败：' + error);
         alert("脚本已成功运行！结果为：请求失败：" + error)
       }
     });
   }
 
+  const getDraw = function () {
+    // 发送签到请求
+    GM_xmlhttpRequest({
+      method: "POST",
+      url: "https://www.tangguo2.com/home.php?mod=task&do=draw&id=13",
+      headers: {
+        "Origin": "https://www.tangguo2.com/forum.php",
+        "Referer": "https://www.tangguo2.com/forum.php"
+      },
+      responseType: "arraybuffer", // 获取原始字节数据
+      onload: function (response) {
+        if (response.status === 200) {
+          const uint8Array = new Uint8Array(response.response);
+          const decoder = new TextDecoder('gbk'); // 假设服务器返回的是 GBK 编码
+          const decodedText = decoder.decode(uint8Array);
+          const resultMatch = decodedText.match("不是进行中的任务");
+          console.log(decodedText);
+          console.log(resultMatch)
+          if (resultMatch !== null) {
+            console.log("领取成功")
+            return;
+          }
+        } else {
+          console.log("领取失败" + response.status);
+        }
+      },
+      onerror: function (error) {
+        showNotification('请求失败：' + error);
+        alert("脚本已成功运行！结果为：请求失败：" + error)
+      }
+    });
+  }
+
+
   // 在页面加载完成后执行签到
   window.addEventListener('load', () => {
     const today = new Date().toDateString();
     console.log('页面加载完成，开始自动签到...');
     const lastSignWindow = GM_getValue('lastSignWindow', '');
-    getFormhash();;
+    GM_setValue('lastSignWindow', '');
     if (lastSignWindow !== today) {
-      setTimeout(()=> {
+      getFormhash();
+      setTimeout(() => {
         // 先获取formhash（动态获取更安全）
         const formhash = GM_getValue('formhash', '')
         if (!formhash) {
@@ -254,20 +326,49 @@
           return;
         }
         doSign(formhash)
+
+        // 申请任务
+        const lastApply = GM_getValue('lastApply', '');
+        if (lastApply !== today) {
+          doApplyTask()
+        }
+        // 评论
+        console.log('页面加载完成，开始自动评论...');
+        // GM_setValue('12345', '');
+        const lastComment = GM_getValue('lastComment', '');
+        if (lastComment !== today) {
+          getImage(formhash);
+          setTimeout(() => {
+            const base64String = GM_getValue('base64String', '');
+            GM_setValue('dataValue', '');
+            if (base64String !== "") {
+              getImageCode(base64String)
+            }
+            setTimeout(() => {
+              let dataValue = GM_getValue('dataValue', '');
+              if (dataValue === "") {
+                setTimeout(() => {
+                  dataValue = GM_getValue('dataValue', '')
+                  if (dataValue !== "") {
+                    doComment(dataValue, formhash)
+                    // 获取奖励
+                    setTimeout(() => {
+                      getDraw();
+                    }, 2000)
+                  }
+                }, 2000)
+              } else {
+                doComment(dataValue, formhash)
+                setTimeout(() => {
+                  getDraw();
+                }, 2000)
+              }
+            }, 2000)
+          }, 2000);
+        }
+
       }, 3000)
     }
-    // console.log('页面加载完成，开始自动评论...');
-    // const lastComment = GM_getValue('lastComment', '');
-    // if (lastComment !== today) {
-    //   getImage(formhash);
-    //   setTimeout(() => {
-    //     const base64String = GM_getValue('base64String', '');
-    //     if (base64String !== ""){
-    //         getImageCode(base64String)
-    //     }
-    //     const dataValue = GM_getValue('dataValue', '');
-    //     doComment(dataValue)
-    //   }, 2000);
-    // }
+    getDraw();
   });
 })();
