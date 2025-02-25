@@ -72,7 +72,7 @@
           const resultMatch = decodedText.match("抱歉，本期您已申请过此任务，请下期再来");
           const resultMatchError = decodedText.match("抱歉，本期您已申请过此任务，请下期再来");
           console.log(decodedText);
-          console.log("resultMatch="+ resultMatch)
+          console.log("resultMatch=" + resultMatch)
           console.log("resultMatchError=" + resultMatchError)
           if (resultMatch !== null || resultMatchError !== null) {
             const today = new Date().toDateString();
@@ -317,82 +317,95 @@
 
   // 在页面加载完成后执行签到
   window.addEventListener('load', () => {
-    const today = new Date().toDateString();
-    console.log('页面加载完成，开始自动签到...');
-    const lastSignWindow1 = GM_getValue('lastSignWindow', '');
-    const lastApply1 = GM_getValue('lastApply', '');
-    const lastComment1 = GM_getValue('lastComment', '');
-    const lastDraw1 = GM_getValue('lastDraw', today);
-
-    if (lastSignWindow1 === today && lastApply1 === today && lastComment1 === today && lastDraw1 === today) {
-      console.log('已全部执行成功')
-      return
+    // 正在执行
+    if (GM_getValue('isRunning', false)) {
+      console.log('正在执行签到，请稍后...');
+      return;
     }
-    getFormhash();
-    setTimeout(() => {
-      // 先获取formhash（动态获取更安全）
-      const formhash = GM_getValue('formhash', '')
-      if (!formhash) {
-        alert("脚本已成功运行！结果为：获取formhash失败")
-        showNotification('获取formhash失败');
-        console.log(formhash)
-        return;
-      }
-      const lastSignWindow = GM_getValue('lastSignWindow', '');
-      if (lastSignWindow !== today) {
-        doSign(formhash)
-      }
+    GM_setValue('isRunning', true)
+    try {
+      const today = new Date().toDateString();
+      console.log('页面加载完成，开始自动签到...');
+      const lastSignWindow1 = GM_getValue('lastSignWindow', '');
+      const lastApply1 = GM_getValue('lastApply', '');
+      const lastComment1 = GM_getValue('lastComment', '');
+      const lastDraw1 = GM_getValue('lastDraw', today);
 
-      // 申请任务
-      const lastApply = GM_getValue('lastApply', '');
-      if (lastApply !== today) {
-        doApplyTask()
+      if (lastSignWindow1 === today && lastApply1 === today && lastComment1 === today && lastDraw1 === today) {
+        console.log('已全部执行成功')
+        return
       }
-      // 评论
-      console.log('页面加载完成，开始自动评论...');
-      const lastComment = GM_getValue('lastComment', '');
-      if (lastComment !== today) {
-        getImage(formhash);
-        setTimeout(() => {
-          const base64String = GM_getValue('base64String', '');
-          GM_setValue('dataValue', '');
-          if (base64String !== "") {
-            getImageCode(base64String)
-          }
-          setTimeout(() => {
-            let dataValue = GM_getValue('dataValue', '');
-            if (dataValue === "") {
-              setTimeout(() => {
-                dataValue = GM_getValue('dataValue', '')
-                if (dataValue !== "") {
-                  doComment(dataValue, formhash)
-                  // 获取奖励
-                  setTimeout(() => {
-                    getDraw();
-                  }, 2000)
-                }
-              }, 2000)
-            } else {
-              doComment(dataValue, formhash)
-              setTimeout(() => {
-                getDraw();
-              }, 2000)
-            }
-          }, 2000)
-        }, 2000);
-      }
-
+      getFormhash();
       setTimeout(() => {
-        const lastSignWindow2 = GM_getValue('lastSignWindow', '');
-        const lastApply2 = GM_getValue('lastApply', '');
-        const lastComment2 = GM_getValue('lastComment', '');
-        const lastDraw2 = GM_getValue('lastDraw', today);
-        alert("脚本已成功运行！结果为：" +
-            "lastSignWindow=" + (lastSignWindow2 === today) + " " +
-            "lastApply=" + (lastApply2 === today) + " " +
-            "lastComment=" + (lastComment2 === today)+ " " +
-            "lastDraw=" + (lastDraw2 === today))
-      }, 12000)
-    }, 3000)
+        // 先获取formhash（动态获取更安全）
+        const formhash = GM_getValue('formhash', '')
+        if (!formhash) {
+          alert("脚本已成功运行！结果为：获取formhash失败")
+          showNotification('获取formhash失败');
+          console.log(formhash)
+          return;
+        }
+        const lastSignWindow = GM_getValue('lastSignWindow', '');
+        if (lastSignWindow !== today) {
+          doSign(formhash)
+        }
+
+        // 申请任务
+        const lastApply = GM_getValue('lastApply', '');
+        if (lastApply !== today) {
+          doApplyTask()
+        }
+        // 评论
+        console.log('页面加载完成，开始自动评论...');
+        const lastComment = GM_getValue('lastComment', '');
+        if (lastComment !== today) {
+          getImage(formhash);
+          setTimeout(() => {
+            const base64String = GM_getValue('base64String', '');
+            GM_setValue('dataValue', '');
+            if (base64String !== "") {
+              getImageCode(base64String)
+            }
+            setTimeout(() => {
+              let dataValue = GM_getValue('dataValue', '');
+              if (dataValue === "") {
+                setTimeout(() => {
+                  dataValue = GM_getValue('dataValue', '')
+                  if (dataValue !== "") {
+                    doComment(dataValue, formhash)
+                    // 获取奖励
+                    setTimeout(() => {
+                      getDraw();
+                    }, 2000)
+                  }
+                }, 2000)
+              } else {
+                doComment(dataValue, formhash)
+                setTimeout(() => {
+                  getDraw();
+                }, 2000)
+              }
+            }, 2000)
+          }, 2000);
+        }
+
+        setTimeout(() => {
+          const lastSignWindow2 = GM_getValue('lastSignWindow', '');
+          const lastApply2 = GM_getValue('lastApply', '');
+          const lastComment2 = GM_getValue('lastComment', '');
+          const lastDraw2 = GM_getValue('lastDraw', today);
+          alert("脚本已成功运行！结果为：" +
+              "lastSignWindow=" + (lastSignWindow2 === today) + " " +
+              "lastApply=" + (lastApply2 === today) + " " +
+              "lastComment=" + (lastComment2 === today) + " " +
+              "lastDraw=" + (lastDraw2 === today))
+        }, 12000)
+      }, 3000)
+      GM_setValue('isRunning', false)
+    } catch (error) {
+      console.error('发生错误：', error);
+      alert("脚本已成功运行！结果为：发生错误：" + error)
+      GM_setValue('isRunning', false)
+    }
   });
 })();
