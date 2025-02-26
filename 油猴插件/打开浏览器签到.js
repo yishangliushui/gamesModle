@@ -126,6 +126,7 @@
       GM_setValue('lastSignWindow', today);
     } else if (text.includes('今日已签')) {
       showNotification('今日已完成签到');
+      const today = new Date().toDateString();
       GM_setValue('lastSignWindow', today);
     } else {
       showNotification('签到结果解析失败');
