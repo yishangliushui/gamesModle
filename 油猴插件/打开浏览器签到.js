@@ -333,6 +333,7 @@
 
       if (lastSignWindow1 === today && lastApply1 === today && lastComment1 === today && lastDraw1 === today) {
         console.log('已全部执行成功')
+        GM_setValue('isRunning', false)
         return
       }
       getFormhash();
@@ -343,6 +344,7 @@
           alert("脚本已成功运行！结果为：获取formhash失败")
           showNotification('获取formhash失败');
           console.log(formhash)
+          GM_setValue('isRunning', false)
           return;
         }
         const lastSignWindow = GM_getValue('lastSignWindow', '');
