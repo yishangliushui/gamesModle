@@ -395,7 +395,7 @@
           const lastSignWindow2 = GM_getValue('lastSignWindow', '');
           const lastApply2 = GM_getValue('lastApply', '');
           const lastComment2 = GM_getValue('lastComment', '');
-          const lastDraw2 = GM_getValue('lastDraw', today);
+          const lastDraw2 = GM_getValue('lastDraw', "");
           alert("脚本已成功运行！结果为：" +
               "lastSignWindow=" + (lastSignWindow2 === today) + " " +
               "lastApply=" + (lastApply2 === today) + " " +
