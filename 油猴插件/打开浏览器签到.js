@@ -331,7 +331,7 @@
       const lastSignWindow1 = GM_getValue('lastSignWindow', '');
       const lastApply1 = GM_getValue('lastApply', '');
       const lastComment1 = GM_getValue('lastComment', '');
-      const lastDraw1 = GM_getValue('lastDraw', today);
+      const lastDraw1 = GM_getValue('lastDraw', '');
 
       if (lastSignWindow1 === today && lastApply1 === today && lastComment1 === today && lastDraw1 === today) {
         console.log('已全部执行成功')
