@@ -324,6 +324,7 @@
       return;
     }
     GM_setValue('isRunning', true)
+    setTimeout(() => {GM_setValue('isRunning', false)}, 12000)
     try {
       const today = new Date().toDateString();
       console.log('页面加载完成，开始自动签到...');
@@ -334,7 +335,6 @@
 
       if (lastSignWindow1 === today && lastApply1 === today && lastComment1 === today && lastDraw1 === today) {
         console.log('已全部执行成功')
-        GM_setValue('isRunning', false)
         return
       }
       getFormhash();
@@ -345,7 +345,6 @@
           alert("脚本已成功运行！结果为：获取formhash失败")
           showNotification('获取formhash失败');
           console.log(formhash)
-          GM_setValue('isRunning', false)
           return;
         }
         const lastSignWindow = GM_getValue('lastSignWindow', '');
@@ -404,11 +403,9 @@
               "lastDraw=" + (lastDraw2 === today))
         }, 12000)
       }, 3000)
-      GM_setValue('isRunning', false)
     } catch (error) {
       console.error('发生错误：', error);
       alert("脚本已成功运行！结果为：发生错误：" + error)
-      GM_setValue('isRunning', false)
     }
   });
 })();
