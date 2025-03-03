@@ -324,7 +324,7 @@
       return;
     }
     GM_setValue('isRunning', true)
-    setTimeout(() => {GM_setValue('isRunning', false)}, 12000)
+    setTimeout(() => {GM_setValue('isRunning', false)}, 3000)
     try {
       const today = new Date().toDateString();
       console.log('页面加载完成，开始自动签到...');
