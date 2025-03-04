@@ -323,8 +323,8 @@
       console.log('正在执行签到，请稍后...');
       return;
     }
-    GM_setValue('isRunning', true)
-    setTimeout(() => {GM_setValue('isRunning', false)}, 10000)
+    GM_setValue('isRunning', true);
+    setTimeout(() => {GM_setValue('isRunning', false)}, 8000);
     try {
       const today = new Date().toDateString();
       console.log('页面加载完成，开始自动签到...');
