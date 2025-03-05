@@ -321,10 +321,10 @@
     // 正在执行
     if (GM_getValue('isRunning', false)) {
       console.log('正在执行签到，请稍后...');
+      setTimeout(() => {GM_setValue('isRunning', false)}, 8000);
       return;
     }
     GM_setValue('isRunning', true);
-    setTimeout(() => {GM_setValue('isRunning', false)}, 8000);
     try {
       const today = new Date().toDateString();
       console.log('页面加载完成，开始自动签到...');
@@ -395,13 +395,13 @@
           const lastSignWindow2 = GM_getValue('lastSignWindow', '');
           const lastApply2 = GM_getValue('lastApply', '');
           const lastComment2 = GM_getValue('lastComment', '');
-          const lastDraw2 = GM_getValue('lastDraw', "");
+          const lastDraw2 = GM_getValue('lastDraw', '');
           alert("脚本已成功运行！结果为：" +
               "lastSignWindow=" + (lastSignWindow2 === today) + " " +
               "lastApply=" + (lastApply2 === today) + " " +
               "lastComment=" + (lastComment2 === today) + " " +
               "lastDraw=" + (lastDraw2 === today))
-        }, 12000)
+        }, 10000)
       }, 3000)
     } catch (error) {
       console.error('发生错误：', error);
