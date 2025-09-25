@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<blocks>
+  <!-- 修改 Auto Turret 的弹药 加上 9mm 和 4mm 穿甲弹  ammo9mmBulletBall -->
+  <append xpath="/blocks/block[@name='autoTurret']/property[@name='AmmoItem']/@value">ammo9mmBulletHP,ammo9mmBulletAP,ammo44MagnumBulletBall,ammo44MagnumBulletHP,ammo44MagnumBulletAP</append>
+  <!-- 修改 Shotgun Turret 的弹药 加上穿甲弹 -->
+  <!-- setattribute append -->
+  <append xpath="/blocks/block[@name='shotgunTurret']/property[@name='AmmoItem']/@value">ammoShotgunBreachingSlug</append>
+</blocks>
