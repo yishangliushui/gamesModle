@@ -1,0 +1,12 @@
+<!-- 文件: buffs.xml -->
+<buff name="buffSickleAOE" hidden="true" duration="1">
+	<effect_group>
+		<triggered_effect trigger="onBuffStart" action="Scan" target="positionAOE" radius="2" duration="0.1">
+			<requirement name="BlockTagCompare" target="other" tag="cultivatedFarm"/>
+		</triggered_effect>
+
+		<triggered_effect trigger="onBuffStart" action="ModifyBlocks" target="positionAOE" radius="2" operation="Harvest">
+			<requirement name="BlockTagCompare" target="other" tag="cultivatedFarm"/>
+		</triggered_effect>
+	</effect_group>
+</buff>

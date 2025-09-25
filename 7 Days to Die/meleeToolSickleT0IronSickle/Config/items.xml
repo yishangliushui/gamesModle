@@ -1,0 +1,153 @@
+<configs>
+	<!--Add new items here-->
+		<append xpath = "/items">
+        <!-- 铁镰刀物品定义 -->
+        <item name="meleeToolSickleT0IronSickle">
+          <!-- 物品标签：只使用游戏原有标签，不添加新标签 -->
+          <!-- tool:基础工具标签，sickle:镰刀分类，harvestingTools:收割工具 -->
+          <!-- canHaveCosmetic:可装备皮肤，melee:近战武器，medium:中型武器 -->
+          <!-- grunting:挥动音效，attStrength:受力量属性影响 -->
+          <property name="Tags" value="tool,sickle,harvestingTools,grunting"/>
+
+          <!-- 显示类型：近战武器 -->
+          <property name="DisplayType" value="melee"/>
+
+          <!-- 持握类型：使用游戏已有的持握姿势 -->
+          <property name="HoldType" value="18"/>
+
+          <!-- 模型文件：需要使用游戏中已有的模型路径 -->
+          <!-- 先用铲子代替 -->
+          <property name="Meshfile" value="@:Other/Items/Tools/shovel_ironPrefab.prefab"/>
+
+          <!-- 材质：铁质 -->
+          <property name="Material" value="Miron"/>
+
+          <!-- 拆解时间：10秒 -->
+          <property name="ScrapTimeOverride" value="10.0"/>
+
+          <!--  维修工具包	resourceRepairKit	通用高级维修材料，用于大多数工具和武器-->
+          <!--  小石子	resourceRockSmall	初级材料，用于石制工具（如石斧、石铲）-->
+          <!--  锻铁	resourceForgedIron	中级材料，用于铁制工具和武器-->
+          <!--  锻钢	resourceForgedSteel	高级材料，用于钢制工具和武器-->
+          <!-- 维修材料：锻铁 -->
+          <property name="RepairTools" value="resourceRepairKit"/>
+
+          <!-- 耐久耗尽后不消失 -->
+          <property name="DegradationBreaksAfter" value="false"/>
+
+          <!-- 卡顿音效 -->
+          <property name="SoundJammed" value="ItemNeedsRepair"/>
+
+          <!-- 破坏音效 -->
+          <property name="SoundDestroy" value="wooddestroy1"/>
+
+          <!-- 经济价值：200 -->
+          <property name="EconomicValue" value="200"/>
+
+          <!-- 经济捆绑大小 -->
+          <property name="EconomicBundleSize" value="1"/>
+
+          <!-- 商人出售模板 -->
+          <!--  <property name="TraderStageTemplate" value="baseTier0"/>-->
+
+          <!-- 可出售给商人 -->
+          <property name="SellableToTrader" value="true"/>
+
+          <!-- 显示品质 -->
+          <property name="ShowQuality" value="true"/>
+
+          <!-- 物品分组：与铲子相同的Tools/Traps组 -->
+          <property name="Group" value="Tools/Traps"/>
+
+          <!-- 维修经验倍率 -->
+          <property name="RepairExpMultiplier" value="5.5"/>
+
+          <!-- 拿出音效 -->
+          <property name="SoundUnholster" value="weapon_unholster"/>
+
+          <!-- 收起音效 -->
+          <property name="SoundHolster" value="weapon_holster"/>
+
+          <!-- 拾取音效：使用已有音效 -->
+          <property name="SoundPickup" value="knife_iron_grab"/>
+
+          <!-- 放置音效：使用已有音效 -->
+          <property name="SoundPlace" value="knife_iron_place"/>
+
+          <!-- 动作定义 - 普通攻击 -->
+          <!-- <property class="Action0">
+            <property name="Class" value="DynamicMelee"/>
+            <property name="Sphere" value=".15"/>
+            <property name="Sound_start" value="knife_swing"/>
+            <property name="Sound_start" value="shovel_stone_swinglight"/>
+            <property name="ToolCategory.harvestingTools" value="1" param1="1"/>
+          </property> -->
+
+          <property class="Action0">
+            <property name="Class" value="DynamicMelee"/>
+            <property name="Sphere" value=".15"/> <!-- limit to 0.15, else the sphere cast can overlap the target already -->
+            <property name="Sound_start" value="shovel_stone_swinglight"/>
+            <property name="ToolCategory.harvestingTools" value="1" param1="1"/>
+          </property>
+          
+          <property class="Action1">
+            <property name="Class" value="DynamicMelee"/>
+            <property name="Sphere" value=".15"/> <!-- limit to 0.15, else the sphere cast can overlap the target already -->
+            <property name="Sound_start" value="shovel_stone_swinglight"/>
+            <property name="ToolCategory.harvestingTools" value="1" param1="1"/>
+            <property name="UsePowerAttackAnimation" value="true"/>
+          </property>
+
+          <!-- 效果组：只包含基础属性 -->
+          <effect_group name="meleeToolSickleT0IronSickle">
+            <!-- 攻速：50次/分钟 -->
+            <passive_effect name="AttacksPerMinute" operation="base_set" value="50"/>
+
+            <!-- 耐力消耗：16.2 -->
+            <passive_effect name="StaminaLoss" operation="base_set" value="16.2" tags="primary"/>
+
+            <!-- 最大耐久：250-500 -->
+            <passive_effect name="DegradationMax" operation="base_set" value="250,500" tier="1,6"/>
+
+            <!-- 每次使用耐久消耗：1点 -->
+            <passive_effect name="DegradationPerUse" operation="base_set" value="1"/>
+
+            <!-- 攻击距离：2.6米 -->
+            <passive_effect name="MaxRange" operation="base_set" value="2.6"/>
+
+            <!-- 方块交互距离：3.5米 -->
+            <passive_effect name="BlockRange" operation="base_set" value="3.5"/>
+
+            <!-- 模组插槽：随品质提升 -->
+            <passive_effect name="ModSlots" operation="base_set" value="1,1,1,2,2,3" tier="1,2,3,4,5,6"/>
+
+            <!-- 模组伤害加成 -->
+            <!-- <passive_effect name="ModPowerBonus" operation="perc_add" value=".10" tags="EntityDamage,BlockDamage"/> -->
+
+            <!-- 模组价值加成 -->
+            <!-- <passive_effect name="ModPowerBonus" operation="base_add" value="300" tags="EconomicValue"/> -->
+
+            <!-- 实体伤害：9点 -->
+            <!-- <passive_effect name="EntityDamage" operation="base_set" value="9"/> -->
+
+            <!-- 实体伤害品质加成 -->
+            <!-- <passive_effect name="EntityDamage" operation="perc_add" value=".1,.5" tier="2,6"/> -->
+
+            <!-- 方块伤害：38点 -->
+            <!-- <passive_effect name="BlockDamage" operation="base_set" value="38"/> -->
+
+            <!-- 方块伤害品质加成 -->
+            <!-- <passive_effect name="BlockDamage" operation="perc_add" value=".1,.5" tier="2,6"/> -->
+
+            <!-- 对木头的伤害修正 -->
+            <!-- <passive_effect name="DamageModifier" operation="perc_add" value="-.7" tags="wood"/> -->
+
+            <!-- 对石头的伤害修正 -->
+            <!-- <passive_effect name="DamageModifier" operation="perc_add" value="-.8" tags="stone"/> -->
+
+            <!-- 对金属的伤害修正 -->
+            <!-- <passive_effect name="DamageModifier" operation="perc_add" value="-.8" tags="metal"/> -->
+          </effect_group>
+        </item>
+    </append>
+</configs>

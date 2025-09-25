@@ -1,0 +1,24 @@
+<configs>
+		<append xpath="/recipes">
+      <!--  tags="learnable,craftingHarvestingTools,packMuleCrafting": 配方标签。-->
+      <!--  learnable: 需要先学习才能制作。-->
+      <!--  craftingHarvestingTools: 属于收割工具制作类别。-->
+      <!--  packMuleCrafting: 可能与"骡子包"技能相关-->
+      <!-- 配方定义：铁铲（T1等级），制作数量1，包含可学习、制作标签 -->
+      <recipe name="meleeToolSickleT0IronSickle" count="1" tags="learnable,craftingHarvestingTools">
+
+        <!-- 所需材料清单 -->
+        <ingredient name="resourceForgedIron" count="16"/>  <!-- 锻铁：16个 -->
+        <ingredient name="resourceWood" count="10"/>        <!-- 木材：10个 -->
+        <ingredient name="resourceLeather" count="2"/>      <!-- 皮革：2个 -->
+        <ingredient name="resourceDuctTape" count="2"/>     <!-- 胶带：2个 -->
+        <ingredient name="resourceLegendaryParts" count="0"/> <!-- 传奇零件：0个（占位符）-->
+
+        <!-- 效果组：定义技能对材料消耗的影响 -->
+        <effect_group>
+          <!-- 被动效果：技能满级时添加传奇零件需求 -->
+          <passive_effect name="CraftingIngredientCount" level="6" operation="base_add" value="1" tags="resourceLegendaryParts"/>
+        </effect_group>
+      </recipe>
+    </append>
+</configs>    

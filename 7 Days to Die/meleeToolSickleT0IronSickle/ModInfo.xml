@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xml>
+	<Name value="meleeToolSickleT0IronSickle" />
+	<DisplayName value="meleeToolSickleT0IronSickle" />
+	<Description value="增加了一把铁质工具镰刀，主要用来收割作物。目前先用铁铲模型代替" />
+	<Author value="YISHANG" />
+	<Version value="1.0" />
+	<Website value="https://www.twitch.tv/oldtimer_tv" />
+</xml>
