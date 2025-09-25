@@ -1,6 +1,9 @@
 ﻿using HarmonyLib;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -10,8 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using static ModEvents;
-using System.Diagnostics;
-using Newtonsoft.Json;
+
 
 //namespace MeleeToolSickleT0IronSickle
 //{
@@ -70,7 +72,7 @@ public class MeleeToolSickleT0IronSickle : IModApi
         // 调试日志输出，仅在调试模式启用时显示
         if (MeleeToolSickleT0IronSickle.config.isDebug)
         {
-            UnityEngine.Debug.Log((prefix ? (MeleeToolSickleT0IronSickle.mod.Name + "[快速采集作物] ") : "") + ((str != null) ? str.ToString() : null));
+            UnityEngine.Debug.Log((prefix ? (MeleeToolSickleT0IronSickle.mod.Name + "[快速采集作物] ") : "") + (str?.ToString()));
         }
     }
 
@@ -108,7 +110,7 @@ public class MeleeToolSickleT0IronSickle : IModApi
                         {
                             try
                             {
-                                BlockValue blockValue = BlockValue.Air; // 用于存储替换的方块（如种子）
+                                //BlockValue blockValue = BlockValue.Air; // 用于存储替换的方块（如种子）
                                 ItemValue itemValue = null; // 物品值
                                 List<Block.SItemDropProb> list;
 
@@ -117,18 +119,22 @@ public class MeleeToolSickleT0IronSickle : IModApi
                                 {
                                     for (int l = 0; l < list.Count; l++)
                                     {
+                                        UnityEngine.Debug.Log("[镰刀收割] list=i" + JsonUtility.ToJson(list[l]));
                                         Block.SItemDropProb sitemDropProb = list[l];
                                         // 计算掉落数量加成（基于技能、工具等）141
-                                        float value = EffectManager.GetValue(PassiveEffects.ScavengingTier, player.inventory.holdingItemItemValue, 1f, player, null, FastTags<TagGroup.Global>.Parse(sitemDropProb.tag), true, true, true, true, true, 1, true, false);
-                                        int num3 = (int)((float)GameUtils.random.RandomRange(sitemDropProb.minCount, sitemDropProb.maxCount + 1) * value);
+                                        float value = EffectManager.GetValue(PassiveEffects.HarvestCount, player.inventory.holdingItemItemValue, 1f, player, null, FastTags<TagGroup.Global>.Parse(sitemDropProb.tag), true, true, true, true, true, 1, true, false);
+                                        MeleeToolSickleT0IronSickle.Dbgl("value=" + value, true);
 
+                                        int num3 = (int)((float)GameUtils.random.RandomRange(sitemDropProb.minCount, sitemDropProb.maxCount + 1) * value);
+                                        //int num3 = (int)value;
+                                        UnityEngine.Debug.Log("[镰刀收割] num3=" + num3);
                                         if (num3 > 0)
                                         {
-                                            MeleeToolSickleT0IronSickle.collectHarvestedItem(player, block, itemValue, num3);
+                                            MeleeToolSickleT0IronSickle.CollectHarvestedItem(player, block, itemValue, num3);
                                         }
                                     }
                                 }
-
+                                UnityEngine.Debug.Log("[镰刀收割] 111111111111");
                                 // 处理掉落组2（额外掉落物，如资源）  2
                                 if (block.Block.itemsToDrop.TryGetValue(EnumDropEvent.Harvest, out List<Block.SItemDropProb> list2))
                                 {
@@ -142,7 +148,8 @@ public class MeleeToolSickleT0IronSickle : IModApi
                                         if (itemValue2.type != 0 && ItemClass.list[itemValue2.type] != null)
                                         {
                                             // 计算掉落加成 PassiveEffects 141
-                                            num5 = EffectManager.GetValue(PassiveEffects.ScavengingTier, player.inventory.holdingItemItemValue, num5, player, null, FastTags<TagGroup.Global>.Parse(sitemDropProb2.tag), true, true, true, true, true, 1, true, false);
+                                            num5 = EffectManager.GetValue(PassiveEffects.HarvestCount, player.inventory.holdingItemItemValue, num5, player, null, FastTags<TagGroup.Global>.Parse(sitemDropProb2.tag), true, true, true, true, true, 1, true, false);
+                                            MeleeToolSickleT0IronSickle.Dbgl("num5=" + num5, true);
                                             int num6 = (int)((float)GameUtils.random.RandomRange(sitemDropProb2.minCount, sitemDropProb2.maxCount + 1) * num5);
 
                                             // 概率计算：分为主要部分和资源缩放部分
@@ -172,24 +179,26 @@ public class MeleeToolSickleT0IronSickle : IModApi
                                                 num4 += num7;
                                             }
 
+                                            UnityEngine.Debug.Log("[镰刀收割] num4=" + num4);
                                             // 添加掉落物到背包
                                             if (num4 > 0)
                                             {
-                                                MeleeToolSickleT0IronSickle.collectHarvestedItem(player, block, itemValue2, num4);
+                                                MeleeToolSickleT0IronSickle.CollectHarvestedItem(player, block, itemValue2, num4);
                                             }
                                         }
                                     }
                                 }
 
-                                blockValue.rotation = block.rotation; // 保持方块旋转方向
-                                                                      // 直接破坏方块
+                                //blockValue.rotation = block.rotation; // 保持方块旋转方向
+                                // 直接破坏方块
                                 block.Block.DamageBlock(player.world, 0, vector3i, block, 1, player.entityId, null, false, false);
 
                                 num++; // 增加收割计数器
                             }
-                            catch (Exception)
+                            catch (Exception ex)
                             {
                                 // 忽略单个方块的错误，继续处理其他方块
+                                UnityEngine.Debug.LogError("[镰刀收割] 收割物品报错: " + ex);
                             }
                         }
                     }
@@ -242,20 +251,41 @@ public class MeleeToolSickleT0IronSickle : IModApi
     }
 
 
-    private static void collectHarvestedItem(EntityPlayerLocal player, BlockValue bv, ItemValue _iv, int _count)
+    private static void CollectHarvestedItem(EntityPlayerLocal player, BlockValue bv, ItemValue _iv, int _count)
     {
         if (_count > 0)
         {
             ItemStack itemStack = new ItemStack(_iv, _count);
-            XUiM_PlayerInventory playerInventory = LocalPlayerUI.GetUIForPlayer(player).xui.PlayerInventory;
+            //XUiM_PlayerInventory playerInventory = LocalPlayerUI.GetUIForPlayer(player).xui.PlayerInventory;
+
+            // 尝试多种方式获取玩家物品栏
+            XUiM_PlayerInventory playerInventory = null;
+            EntityPlayerLocal localPlayer = GameManager.Instance.World.GetPrimaryPlayer();
+
+            if (player is EntityPlayerLocal localPl && localPl.PlayerUI != null)
+            {
+                playerInventory = localPl.PlayerUI.xui.PlayerInventory;
+                UnityEngine.Debug.Log("[镰刀收割] playerInventory = 1, " + playerInventory);
+            }
+            else if (localPlayer != null && localPlayer.PlayerUI != null)
+            {
+                playerInventory = localPlayer.PlayerUI.xui.PlayerInventory;
+                UnityEngine.Debug.Log("[镰刀收割] playerInventory = 2, " + playerInventory);
+            }
 
             // 触发任务事件（收割物品）
             QuestEventManager.Current.HarvestedItem(player.inventory.holdingItemItemValue, itemStack, bv);
-
+            UnityEngine.Debug.Log("[镰刀收割] itemStack=" + JsonUtility.ToJson(itemStack));
             // 尝试添加到背包，失败则掉落在地上
-            if (!playerInventory.AddItem(itemStack))
-            {
-                GameManager.Instance.ItemDropServer(new ItemStack(_iv, itemStack.count), GameManager.Instance.World.GetPrimaryPlayer().GetDropPosition(), new Vector3(0.5f, 0.5f, 0.5f), GameManager.Instance.World.GetPrimaryPlayerId(), 60f, false);
+            try {
+                if (!playerInventory.AddItem(itemStack))
+                {
+                    GameManager.Instance.ItemDropServer(new ItemStack(_iv, itemStack.count), GameManager.Instance.World.GetPrimaryPlayer().GetDropPosition(), new Vector3(0.5f, 0.5f, 0.5f), GameManager.Instance.World.GetPrimaryPlayerId(), 60f, false);
+                }
+            }
+            catch (Exception ex) {
+                UnityEngine.Debug.LogError("[镰刀收割] 报错1：" + ex.StackTrace);
+                UnityEngine.Debug.LogError("[镰刀收割] 报错2：" + ex);
             }
         }
     }
@@ -277,16 +307,20 @@ public class MeleeToolSickleT0IronSickle : IModApi
         //[HarmonyPatch("ProcessDamageResponseLocal")]
         [HarmonyPatch("Update")]
         [HarmonyPostfix]
-        public static void Postfix(GameManager __instance, World ___world)
+        public static void Postfix(GameManager __instance, World ___m_World, GUIWindowManager ___windowManager)
         {
             UnityEngine.Debug.Log("[镰刀收割] 到处理请求");
-            if (!MeleeToolSickleT0IronSickle.config.modEnabled || ___world == null || __instance == null)
+            if (!MeleeToolSickleT0IronSickle.config.modEnabled || ___m_World == null || __instance == null)
             {
                 UnityEngine.Debug.Log("[镰刀收割] 到处理请求1");
                 return;
             }
 
-            EntityPlayerLocal player = ___world.GetPrimaryPlayer();
+            EntityPlayerLocal player = ___m_World.GetPrimaryPlayer();
+            if (player == null) {
+                return;
+            }
+
 
             // 检查玩家是否存活
             if (player.IsDead())
@@ -319,69 +353,85 @@ public class MeleeToolSickleT0IronSickle : IModApi
     }
 
 
-    //[HarmonyPatch(typeof(EntityPlayerLocal))]
-    //public static class EntityPlayerLocal_Attack_Patch
-    //{
-    //    // 方法1：拦截攻击命中后的处理
-    //    [HarmonyPatch("ProcessDamageResponseLocal")]
-    //    [HarmonyPostfix]
-    //    public static void ProcessDamageResponseLocal_Postfix(EntityPlayerLocal __instance, DamageResponse _dmResponse)
-    //    {
-    //        if (!MeleeToolSickleT0IronSickle.config.modEnabled)
-    //            return;
+    [HarmonyPatch(typeof(EntityPlayerLocal))]
+    public static class EntityPlayerLocal_Attack_Patch
+    {
+        // 方法1：拦截攻击命中后的处理
+        [HarmonyPatch("ProcessDamageResponseLocal")]
+        [HarmonyPostfix]
+        public static void ProcessDamageResponseLocal_Postfix(EntityPlayerLocal __instance, DamageResponse _dmResponse)
+        {
+            try
+            {
+                UnityEngine.Debug.Log("[镰刀收割] _dmResponse = " + JsonUtility.ToJson(_dmResponse));
+                if (!MeleeToolSickleT0IronSickle.config.modEnabled)
+                    return;
 
-    //        UnityEngine.Debug.Log($"[镰刀收割] 攻击响应处理，伤害强度: {_dmResponse.Strength}");
+                UnityEngine.Debug.Log($"[镰刀收割] 攻击响应处理，伤害强度: {_dmResponse.Strength}");
 
-    //        // 判断是否命中目标（有伤害产生）
-    //        if (_dmResponse.Strength > 0 && _dmResponse.Source.damageType != EnumDamageTypes.Weather)
-    //        {
-    //            UnityEngine.Debug.Log($"[镰刀收割] 攻击命中目标，实体ID: {_dmResponse..entityId}");
+                // 判断是否命中目标（有伤害产生）Slashing
+                //if (_dmResponse.Strength > 0 && _dmResponse.Source.damageType != EnumDamageTypes.Weather)
+                if (_dmResponse.Strength > 0 && _dmResponse.Source.damageType == EnumDamageTypes.Slashing)
+                {
+                    UnityEngine.Debug.Log($"[镰刀收割] 攻击命中目标，实体ID: {_dmResponse.Source.getEntityId()}");
 
-    //            // 获取被攻击的实体
-    //            Entity target = __instance.world.GetEntity(_dmResponse.HitInfo.entityId);
-    //            if (target != null)
-    //            {
-    //                UnityEngine.Debug.Log($"[镰刀收割] 命中目标: {target.EntityName}");
+                    // 获取被攻击的实体
+                    Entity target = __instance.world.GetEntity(_dmResponse.Source.getEntityId());
+                    if (target != null)
+                    {
+                        Vector3i targetVector3i = target.GetBlockPosition();
+                        BlockValue block = __instance.world.GetBlock(targetVector3i); // 获取方块值
+                        if (MeleeToolSickleT0IronSickle.IsHarvestableBlock(block.Block.blockName.ToLower()))
+                        {
+                            return;
+                        }
+                        UnityEngine.Debug.Log($"[镰刀收割] 命中目标: {target.GetDebugName()}");
 
-    //                // 检查是否为镰刀并处理收割逻辑
-    //                CheckSickleAndHarvest(__instance, target, _dmResponse);
-    //            }
-    //        }
-    //    }
+                        // 检查是否为镰刀并处理收割逻辑
+                        CheckSickleAndHarvest(__instance);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
 
-    //    // 方法2：拦截攻击触发
-    //    [HarmonyPatch("OnFired")]
-    //    [HarmonyPostfix]
-    //    public static void OnFired_Postfix(EntityPlayerLocal __instance)
-    //    {
-    //        if (!MeleeToolSickleT0IronSickle.config.modEnabled)
-    //            return;
+                UnityEngine.Debug.LogError($"[镰刀收割] 命中目标:" + ex);
+            }
+        }
 
-    //        UnityEngine.Debug.Log("[镰刀收割] 攻击动作触发");
+        //// 方法2：拦截攻击触发
+        //[HarmonyPatch("OnFired")]
+        //[HarmonyPostfix]
+        //public static void OnFired_Postfix(EntityPlayerLocal __instance)
+        //{
+        //    if (!MeleeToolSickleT0IronSickle.config.modEnabled)
+        //        return;
 
-    //        // 检查是否为镰刀
-    //        ItemValue heldItem = __instance.inventory.holdingItemItemValue;
-    //        if (!heldItem.IsEmpty() && heldItem.ItemClass.GetItemName().EndsWith("Sickle"))
-    //        {
-    //            UnityEngine.Debug.Log($"[镰刀收割] 使用镰刀攻击: {heldItem.ItemClass.GetItemName()}");
-    //            // 可以在这里处理攻击前的逻辑
-    //        }
-    //    }
+        //    UnityEngine.Debug.Log("[镰刀收割] 攻击动作触发");
 
-    //    private static void CheckSickleAndHarvest(EntityPlayerLocal player, Entity target, DamageResponse damageResponse)
-    //    {
-    //        // 检查玩家装备的是否为镰刀
-    //        ItemValue heldItem = player.inventory.holdingItemItemValue;
-    //        if (heldItem.IsEmpty() || !heldItem.ItemClass.GetItemName().EndsWith("Sickle"))
-    //            return;
+        //    // 检查是否为镰刀
+        //    ItemValue heldItem = __instance.inventory.holdingItemItemValue;
+        //    if (!heldItem.IsEmpty() && heldItem.ItemClass.GetItemName().EndsWith("Sickle"))
+        //    {
+        //        UnityEngine.Debug.Log($"[镰刀收割] 使用镰刀攻击: {heldItem.ItemClass.GetItemName()}");
+        //        // 可以在这里处理攻击前的逻辑
+        //    }
+        //}
 
-    //        UnityEngine.Debug.Log($"[镰刀收割] 镰刀命中目标，开始收割逻辑");
+        private static void CheckSickleAndHarvest(EntityPlayerLocal player)
+        {
+            // 检查玩家装备的是否为镰刀
+            ItemValue heldItem = player.inventory.holdingItemItemValue;
+            if (heldItem.IsEmpty() || !heldItem.ItemClass.GetItemName().EndsWith("Sickle"))
+                return;
 
-    //        // 调用你的收割方法
-    //        MeleeToolSickleT0IronSickle.Dbgl($"Sickle hit with {heldItem.ItemClass.GetItemName()}", true);
-    //        MeleeToolSickleT0IronSickle.HarvestCrops(player, target, damageResponse);
-    //    }
-    //}
+            UnityEngine.Debug.Log($"[镰刀收割] 镰刀命中目标，开始收割逻辑");
+
+            // 调用你的收割方法
+            MeleeToolSickleT0IronSickle.Dbgl($"Sickle hit with {heldItem.ItemClass.GetItemName()}", true);
+            MeleeToolSickleT0IronSickle.HarvestCrops(player);
+        }
+    } 
 }
 
 public class ModConfig
