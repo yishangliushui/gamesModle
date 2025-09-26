@@ -88,6 +88,10 @@
             <property name="Sphere" value=".15"/> <!-- limit to 0.15, else the sphere cast can overlap the target already -->
             <property name="Sound_start" value="shovel_stone_swinglight"/>
             <property name="ToolCategory.harvestingTools" value="1" param1="1"/>
+			<property name="GrazeStart" value=".25"/>
+			<property name="GrazeEnd" value=".35"/>
+			<property name="SwingDegrees" value="90"/>
+			<property name="SwingAngle" value="90"/>
           </property>
           
           <property class="Action1">
@@ -96,6 +100,10 @@
             <property name="Sound_start" value="shovel_stone_swinglight"/>
             <property name="ToolCategory.harvestingTools" value="1" param1="1"/>
             <property name="UsePowerAttackAnimation" value="true"/>
+			<property name="GrazeStart" value=".25"/>
+			<property name="GrazeEnd" value=".35"/>
+			<property name="SwingDegrees" value="90"/>
+			<property name="SwingAngle" value="90"/>
           </property>
 
           <!-- 效果组：只包含基础属性 -->

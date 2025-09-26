@@ -89,118 +89,38 @@ public class MeleeToolSickleT0IronSickle : IModApi
         GameUtils.random = GameRandomManager.Instance.CreateGameRandom();
         GameUtils.random.SetSeed((int)Stopwatch.GetTimestamp());
 
+        Vector3i playerBlockPos = player.GetBlockPosition();
+        Vector3 playerPos = player.GetPosition();
+        Vector3 playerForward = player.GetLookVector().normalized;
+
         // 三层循环遍历3D区域内的所有方块
-        for (int i = -blockRadius; i <= blockRadius; i++)
+        int a = 1;
+        if (a == 1)
         {
-            for (int j = -Math.Min(blockRadius, 1); j <= Math.Min(blockRadius, 3); j++) // Y轴限制在1格以内
+            for (int i = -blockRadius; i <= blockRadius; i++)
             {
-                for (int k = -blockRadius; k <= blockRadius; k++)
+                for (int j = -Math.Min(blockRadius, 1); j <= Math.Min(blockRadius, 1); j++) // Y轴限制在1格以内
                 {
-                    Vector3i vector3i = blockPosition + new Vector3i(i, j, k); // 计算当前检查的方块位置
-                    BlockValue block = player.world.GetBlock(vector3i); // 获取方块值
-
-                    // 跳过空气方块和子方块
-                    if (!block.isair && !block.ischild)
+                    for (int k = -blockRadius; k <= blockRadius; k++)
                     {
-                        Chunk chunk = (Chunk)player.world.GetChunkFromWorldPos(vector3i);
-                        int num2 = (GameStats.GetInt(EnumGameStats.LandClaimDecayMode) - 1) / 2; // 获取土地保护范围
+                        num = getDropNum(player, num, blockPosition, i, j, k);
+                    }
+                }
+            }
+        }
+        else {
 
-                        // 检查方块是否在受保护的土地上且可收割
-                        if (!player.world.IsLandProtectedBlock(chunk, vector3i, player.persistentPlayerData, num2, num2, false) && MeleeToolSickleT0IronSickle.IsHarvestableBlock(block.Block.blockName.ToLower()))
-                        {
-                            try
-                            {
-                                //BlockValue blockValue = BlockValue.Air; // 用于存储替换的方块（如种子）
-                                ItemValue itemValue = null; // 物品值
-                                List<Block.SItemDropProb> list;
+            // 锥形区域收割
+            for (int i = 1; i <= blockRadius; i++)
+            {
+                // 随着距离增加，横向范围也增加（锥形效果）
+                int maxWidth = Mathf.Min(i, blockRadius);
 
-                                // 处理掉落组0（主要掉落物，如作物果实）
-                                if (block.Block.itemsToDrop.TryGetValue(0, out list))
-                                {
-                                    for (int l = 0; l < list.Count; l++)
-                                    {
-                                        UnityEngine.Debug.Log("[镰刀收割] list=i" + JsonUtility.ToJson(list[l]));
-                                        Block.SItemDropProb sitemDropProb = list[l];
-                                        // 计算掉落数量加成（基于技能、工具等）141
-                                        float value = EffectManager.GetValue(PassiveEffects.HarvestCount, player.inventory.holdingItemItemValue, 1f, player, null, FastTags<TagGroup.Global>.Parse(sitemDropProb.tag), true, true, true, true, true, 1, true, false);
-                                        MeleeToolSickleT0IronSickle.Dbgl("value=" + value, true);
-
-                                        int num3 = (int)((float)GameUtils.random.RandomRange(sitemDropProb.minCount, sitemDropProb.maxCount + 1) * value);
-                                        //int num3 = (int)value;
-                                        UnityEngine.Debug.Log("[镰刀收割] num3=" + num3);
-                                        if (num3 > 0)
-                                        {
-                                            MeleeToolSickleT0IronSickle.CollectHarvestedItem(player, block, itemValue, num3);
-                                        }
-                                    }
-                                }
-                                UnityEngine.Debug.Log("[镰刀收割] 111111111111");
-                                // 处理掉落组2（额外掉落物，如资源）  2
-                                if (block.Block.itemsToDrop.TryGetValue(EnumDropEvent.Harvest, out List<Block.SItemDropProb> list2))
-                                {
-                                    for (int m = 0; m < list2.Count; m++)
-                                    {
-                                        int num4 = 0; // 最终掉落数量
-                                        Block.SItemDropProb sitemDropProb2 = list2[m];
-                                        float num5 = 0f;
-                                        ItemValue itemValue2 = (sitemDropProb2.name.Equals("*") ? block.ToItemValue() : new ItemValue(ItemClass.GetItem(sitemDropProb2.name, false).type, false));
-
-                                        if (itemValue2.type != 0 && ItemClass.list[itemValue2.type] != null)
-                                        {
-                                            // 计算掉落加成 PassiveEffects 141
-                                            num5 = EffectManager.GetValue(PassiveEffects.HarvestCount, player.inventory.holdingItemItemValue, num5, player, null, FastTags<TagGroup.Global>.Parse(sitemDropProb2.tag), true, true, true, true, true, 1, true, false);
-                                            MeleeToolSickleT0IronSickle.Dbgl("num5=" + num5, true);
-                                            int num6 = (int)((float)GameUtils.random.RandomRange(sitemDropProb2.minCount, sitemDropProb2.maxCount + 1) * num5);
-
-                                            // 概率计算：分为主要部分和资源缩放部分
-                                            int num7 = num6 - num6 / 3;
-                                            if (num7 > 0 && GameUtils.random.RandomFloat <= sitemDropProb2.prob)
-                                            {
-                                                num4 += num7;
-                                            }
-
-                                            num7 = num6 / 3;
-                                            float num8 = sitemDropProb2.prob;
-                                            float resourceScale = sitemDropProb2.resourceScale;
-
-                                            // 应用资源缩放
-                                            if (resourceScale > 0f && resourceScale < 1f)
-                                            {
-                                                num8 /= resourceScale;
-                                                num7 = (int)((float)num7 * resourceScale);
-                                                if (num7 < 1)
-                                                {
-                                                    num7++;
-                                                }
-                                            }
-
-                                            if (num7 > 0 && GameUtils.random.RandomFloat <= num8)
-                                            {
-                                                num4 += num7;
-                                            }
-
-                                            UnityEngine.Debug.Log("[镰刀收割] num4=" + num4);
-                                            // 添加掉落物到背包
-                                            if (num4 > 0)
-                                            {
-                                                MeleeToolSickleT0IronSickle.CollectHarvestedItem(player, block, itemValue2, num4);
-                                            }
-                                        }
-                                    }
-                                }
-
-                                //blockValue.rotation = block.rotation; // 保持方块旋转方向
-                                // 直接破坏方块
-                                block.Block.DamageBlock(player.world, 0, vector3i, block, 1, player.entityId, null, false, false);
-
-                                num++; // 增加收割计数器
-                            }
-                            catch (Exception ex)
-                            {
-                                // 忽略单个方块的错误，继续处理其他方块
-                                UnityEngine.Debug.LogError("[镰刀收割] 收割物品报错: " + ex);
-                            }
-                        }
+                for (int j = -maxWidth; j <= maxWidth; j++)
+                {
+                    for (int k = -1; k <= 1; k++)
+                    {
+                        num = getDropNum(player, num, blockPosition, i, j, k);
                     }
                 }
             }
@@ -215,6 +135,116 @@ public class MeleeToolSickleT0IronSickle : IModApi
         }
     }
 
+    private static int getDropNum(EntityPlayerLocal player, int num, Vector3i blockPosition, int i, int j, int k)
+    {
+        Vector3i vector3i = blockPosition + new Vector3i(i, j, k); // 计算当前检查的方块位置
+        BlockValue block = player.world.GetBlock(vector3i); // 获取方块值
+
+        // 跳过空气方块和子方块
+        if (!block.isair && !block.ischild)
+        {
+            Chunk chunk = (Chunk)player.world.GetChunkFromWorldPos(vector3i);
+            int num2 = (GameStats.GetInt(EnumGameStats.LandClaimDecayMode) - 1) / 2; // 获取土地保护范围
+
+            // 检查方块是否在受保护的土地上且可收割
+            if (!player.world.IsLandProtectedBlock(chunk, vector3i, player.persistentPlayerData, num2, num2, false) && MeleeToolSickleT0IronSickle.IsHarvestableBlock(block.Block.blockName.ToLower()))
+            {
+                try
+                {
+                    //BlockValue blockValue = BlockValue.Air; // 用于存储替换的方块（如种子）
+                    ItemValue itemValue = null; // 物品值
+
+                    // 处理掉落组0（主要掉落物，如作物果实）
+                    if (block.Block.itemsToDrop.TryGetValue(0, out List<Block.SItemDropProb> list))
+                    {
+                        for (int l = 0; l < list.Count; l++)
+                        {
+                            UnityEngine.Debug.Log("[镰刀收割] list=i" + JsonUtility.ToJson(list[l]));
+                            Block.SItemDropProb sitemDropProb = list[l];
+                            // 计算掉落数量加成（基于技能、工具等）141
+                            float value = EffectManager.GetValue(PassiveEffects.HarvestCount, player.inventory.holdingItemItemValue, 1f, player, null, FastTags<TagGroup.Global>.Parse(sitemDropProb.tag), true, true, true, true, true, 1, true, false);
+                            MeleeToolSickleT0IronSickle.Dbgl("value=" + value, true);
+
+                            int num3 = (int)((float)GameUtils.random.RandomRange(sitemDropProb.minCount, sitemDropProb.maxCount + 1) * value);
+                            //int num3 = (int)value;
+                            UnityEngine.Debug.Log("[镰刀收割] num3=" + num3);
+                            if (num3 > 0)
+                            {
+                                MeleeToolSickleT0IronSickle.CollectHarvestedItem(player, block, itemValue, num3);
+                            }
+                        }
+                    }
+                    UnityEngine.Debug.Log("[镰刀收割] 111111111111");
+                    // 处理掉落组2（额外掉落物，如资源）  2
+                    if (block.Block.itemsToDrop.TryGetValue(EnumDropEvent.Harvest, out List<Block.SItemDropProb> list2))
+                    {
+                        for (int m = 0; m < list2.Count; m++)
+                        {
+                            int num4 = 0; // 最终掉落数量
+                            Block.SItemDropProb sitemDropProb2 = list2[m];
+                            float num5 = 0f;
+                            ItemValue itemValue2 = (sitemDropProb2.name.Equals("*") ? block.ToItemValue() : new ItemValue(ItemClass.GetItem(sitemDropProb2.name, false).type, false));
+
+                            if (itemValue2.type != 0 && ItemClass.list[itemValue2.type] != null)
+                            {
+                                // 计算掉落加成 PassiveEffects 141
+                                num5 = EffectManager.GetValue(PassiveEffects.HarvestCount, player.inventory.holdingItemItemValue, num5, player, null, FastTags<TagGroup.Global>.Parse(sitemDropProb2.tag), true, true, true, true, true, 1, true, false);
+                                MeleeToolSickleT0IronSickle.Dbgl("num5=" + num5, true);
+                                int num6 = (int)((float)GameUtils.random.RandomRange(sitemDropProb2.minCount, sitemDropProb2.maxCount + 1) * num5);
+
+                                // 概率计算：分为主要部分和资源缩放部分
+                                int num7 = num6 - num6 / 3;
+                                if (num7 > 0 && GameUtils.random.RandomFloat <= sitemDropProb2.prob)
+                                {
+                                    num4 += num7;
+                                }
+
+                                num7 = num6 / 3;
+                                float num8 = sitemDropProb2.prob;
+                                float resourceScale = sitemDropProb2.resourceScale;
+
+                                // 应用资源缩放
+                                if (resourceScale > 0f && resourceScale < 1f)
+                                {
+                                    num8 /= resourceScale;
+                                    num7 = (int)((float)num7 * resourceScale);
+                                    if (num7 < 1)
+                                    {
+                                        num7++;
+                                    }
+                                }
+
+                                if (num7 > 0 && GameUtils.random.RandomFloat <= num8)
+                                {
+                                    num4 += num7;
+                                }
+
+                                UnityEngine.Debug.Log("[镰刀收割] num4=" + num4);
+                                // 添加掉落物到背包
+                                if (num4 > 0)
+                                {
+                                    MeleeToolSickleT0IronSickle.CollectHarvestedItem(player, block, itemValue2, num4);
+                                }
+                            }
+                        }
+                    }
+
+                    //blockValue.rotation = block.rotation; // 保持方块旋转方向
+                    // 直接破坏方块
+                    block.Block.DamageBlock(player.world, 0, vector3i, block, 1, player.entityId, null, false, false);
+
+                    num++; // 增加收割计数器
+                }
+                catch (Exception ex)
+                {
+                    // 忽略单个方块的错误，继续处理其他方块
+                    UnityEngine.Debug.LogError("[镰刀收割] 收割物品报错: " + ex);
+                }
+            }
+        }
+
+        return num;
+    }
 
     public static bool IsHarvestableBlock(string name)
     {
@@ -394,7 +424,6 @@ public class MeleeToolSickleT0IronSickle : IModApi
             }
             catch (Exception ex)
             {
-
                 UnityEngine.Debug.LogError($"[镰刀收割] 命中目标:" + ex);
             }
         }
