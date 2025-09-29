@@ -12,12 +12,13 @@
           <!-- 显示类型：近战武器 -->
           <property name="DisplayType" value="melee"/>
 
-          <!-- 持握类型：使用游戏已有的持握姿势 -->
-          <property name="HoldType" value="18"/>
+          <!-- 持握类型：使用游戏已有的持握姿势 18-->
+		  <property name="HoldType" value="47"/>
+			
 
           <!-- 模型文件：需要使用游戏中已有的模型路径 -->
           <!-- 先用铲子代替 -->
-          <property name="Meshfile" value="@:Other/Items/Tools/shovel_ironPrefab.prefab"/>
+		  <property name="Meshfile" value="#@modfolder:Resources/meleeToolSickleT0IronSickle.unity3d?Sickle_001"/>
 
           <!-- 材质：铁质 -->
           <property name="Material" value="Miron"/>
@@ -88,10 +89,10 @@
             <property name="Sphere" value=".15"/> <!-- limit to 0.15, else the sphere cast can overlap the target already -->
             <property name="Sound_start" value="shovel_stone_swinglight"/>
             <property name="ToolCategory.harvestingTools" value="1" param1="1"/>
-			<property name="GrazeStart" value=".25"/>
-			<property name="GrazeEnd" value=".35"/>
-			<property name="SwingDegrees" value="90"/>
-			<property name="SwingAngle" value="90"/>
+			<property name="GrazeStart" value=".28"/>
+			<property name="GrazeEnd" value=".4"/>
+			<property name="SwingDegrees" value="80"/>
+			<property name="SwingAngle" value="130"/>
           </property>
           
           <property class="Action1">
@@ -100,10 +101,10 @@
             <property name="Sound_start" value="shovel_stone_swinglight"/>
             <property name="ToolCategory.harvestingTools" value="1" param1="1"/>
             <property name="UsePowerAttackAnimation" value="true"/>
-			<property name="GrazeStart" value=".25"/>
-			<property name="GrazeEnd" value=".35"/>
-			<property name="SwingDegrees" value="90"/>
-			<property name="SwingAngle" value="90"/>
+			<property name="GrazeStart" value=".3"/>
+			<property name="GrazeEnd" value=".4"/>
+			<property name="SwingDegrees" value="-80"/>
+			<property name="SwingAngle" value="-60"/>
           </property>
 
           <!-- 效果组：只包含基础属性 -->
