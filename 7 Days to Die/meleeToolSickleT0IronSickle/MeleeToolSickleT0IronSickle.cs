@@ -331,12 +331,12 @@ public class MeleeToolSickleT0IronSickle : IModApi
 
 
     //[HarmonyPatch(typeof(EntityPlayerLocal))]
-    [HarmonyPatch(typeof(GameManager))]
+    //[HarmonyPatch(typeof(GameManager))]
     public static class GameManager_Update_Patch
     {
         //[HarmonyPatch("ProcessDamageResponseLocal")]
-        [HarmonyPatch("Update")]
-        [HarmonyPostfix]
+        //[HarmonyPatch("Update")]
+        //[HarmonyPostfix]
         public static void Postfix(GameManager __instance, World ___m_World, GUIWindowManager ___windowManager)
         {
             UnityEngine.Debug.Log("[镰刀收割] 到处理请求");
@@ -383,44 +383,40 @@ public class MeleeToolSickleT0IronSickle : IModApi
     }
 
 
-    [HarmonyPatch(typeof(EntityPlayerLocal))]
+    [HarmonyPatch(typeof(ItemActionMelee))]
     public static class EntityPlayerLocal_Attack_Patch
     {
         // 方法1：拦截攻击命中后的处理
-        [HarmonyPatch("ProcessDamageResponseLocal")]
+        [HarmonyPatch("hitTheTarget")]
         [HarmonyPostfix]
-        public static void ProcessDamageResponseLocal_Postfix(EntityPlayerLocal __instance, DamageResponse _dmResponse)
+        public static void HitTheTarget_Postfix(ItemActionMelee __instance, ItemActionMelee.InventoryDataMelee _actionData, WorldRayHitInfo hitInfo, float damageScale)
         {
             try
             {
-                UnityEngine.Debug.Log("[镰刀收割] _dmResponse = " + JsonUtility.ToJson(_dmResponse));
+                UnityEngine.Debug.Log($"[镰刀收割] hitTheTarget 方法被调用，命中目标: {hitInfo.bHitValid}");
                 if (!MeleeToolSickleT0IronSickle.config.modEnabled)
                     return;
 
-                UnityEngine.Debug.Log($"[镰刀收割] 攻击响应处理，伤害强度: {_dmResponse.Strength}");
+                // 获取持有武器的实体
+                EntityAlive holdingEntity = _actionData.invData.holdingEntity;
+                UnityEngine.Debug.Log($"[镰刀收割] holdingEntity : {JsonUtility.ToJson(holdingEntity)}");
+                if (holdingEntity == null || !(holdingEntity is EntityPlayerLocal))
+                    return;
 
-                // 判断是否命中目标（有伤害产生）Slashing
-                //if (_dmResponse.Strength > 0 && _dmResponse.Source.damageType != EnumDamageTypes.Weather)
-                if (_dmResponse.Strength > 0 && _dmResponse.Source.damageType == EnumDamageTypes.Slashing)
+                EntityPlayerLocal player = holdingEntity as EntityPlayerLocal;
+                UnityEngine.Debug.Log($"[镰刀收割] player : {JsonUtility.ToJson(player)}");
+                if (player == null) return;
+
+                // 检查玩家装备的是否为镰刀
+                ItemValue heldItem = player.inventory.holdingItemItemValue;
+                if (heldItem.IsEmpty() || !heldItem.ItemClass.GetItemName().EndsWith("Sickle"))
+                    return;
+
+                if (hitInfo.bHitValid)
                 {
-                    UnityEngine.Debug.Log($"[镰刀收割] 攻击命中目标，实体ID: {_dmResponse.Source.getEntityId()}");
-
-                    // 获取被攻击的实体
-                    Entity target = __instance.world.GetEntity(_dmResponse.Source.getEntityId());
-                    if (target != null)
-                    {
-                        Vector3i targetVector3i = target.GetBlockPosition();
-                        BlockValue block = __instance.world.GetBlock(targetVector3i); // 获取方块值
-                        if (MeleeToolSickleT0IronSickle.IsHarvestableBlock(block.Block.blockName.ToLower()))
-                        {
-                            return;
-                        }
-                        UnityEngine.Debug.Log($"[镰刀收割] 命中目标: {target.GetDebugName()}");
-
-                        // 检查是否为镰刀并处理收割逻辑
-                        CheckSickleAndHarvest(__instance);
-                    }
+                    CheckSickleAndHarvest(player);
                 }
+                UnityEngine.Debug.LogError($"[镰刀收割] hitInfo.bHitValid:" + hitInfo.bHitValid); 
             }
             catch (Exception ex)
             {
