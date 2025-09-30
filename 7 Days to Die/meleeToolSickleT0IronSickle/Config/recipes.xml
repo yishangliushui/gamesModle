@@ -1,5 +1,5 @@
 <configs>
-		<append xpath="/recipes">
+	<append xpath="/recipes">
       <!--  tags="learnable,craftingHarvestingTools,packMuleCrafting": 配方标签。-->
       <!--  learnable: 需要先学习才能制作。-->
       <!--  craftingHarvestingTools: 属于收割工具制作类别。-->

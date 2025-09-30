@@ -16,13 +16,15 @@
 		  <property name="HoldType" value="47"/>
 			
 
-          <!-- 模型文件：需要使用游戏中已有的模型路径 -->
+          <!-- 模型文件：需要使用游戏中已有的模型路径 #@modfolder:Resources/meleeToolSickleT0IronSickle.unity3d?Sickle_002"  -->
           <!-- 先用铲子代替 -->
-		  <property name="Meshfile" value="#@modfolder:Resources/meleeToolSickleT0IronSickle.unity3d?Sickle_001"/>
+
+		  <property name="Meshfile" value="#@modfolder:Resources/meleeToolSickleT0IronSickle.unity3d?Sickle"/>
+
 
 		  <property name="CustomIcon" value="meleeToolSickleT0IronSickle" />
-		  <property name="CustomIconTint" value="248,120,160" />
-			
+
+		  			
           <!-- 材质：铁质 -->
           <property name="Material" value="Miron"/>
 
